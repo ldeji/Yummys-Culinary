@@ -8,9 +8,7 @@ export default function Home() {
       <p className="text-lg md:text-xl text-gray-500 mb-8 max-w-lg">
         Experience culinary excellence with locally sourced ingredients and modern atmosphere.
       </p>
-      <p className="text-lg md:text-xl text-gray-500 mb-8 max-w-lg">
-        Delivered to your doorstep in minutes.
-      </p>
+      
 
       {/* This Link takes us to the Menu Page */}
       <Link to="/menu">

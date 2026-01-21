@@ -76,7 +76,7 @@ function App() {
             </h1>
           </div>
 
-            <ul className="hidden md:flex gap-8 font-medium text-gray-600">
+            <ul className="text-xs gap-4 md:flex md:gap-8 font-medium text-gray-600">
               <Link to="/" className="hover:text-yellow-600 transition">Home</Link>
               <Link to="/menu" className="hover:text-yellow-600 transition">Menu</Link>
               <Link to="/about" className="hover:text-yellow-600 transition">About</Link>
