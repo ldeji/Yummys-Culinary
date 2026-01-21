@@ -69,9 +69,9 @@ function App() {
              {/*Logo */}
           <div className="flex items-center gap-2">
             <div className='animate-[bounce_3s_linear_infinite]'>
-            <img src={yummyLogo} alt="Logo" className="w-18 h-18 rounded-full object-cover animate-[spin_5s_linear_infinite]" />
+            <img src={yummyLogo} alt="Logo" className="h-12 w-12 md:w-20 md:h-20 rounded-full object-cover animate-[spin_5s_linear_infinite]" />
             </div>
-            <h1 className="text-3xl font-bold text-yellow-500 tracking-tight">
+            <h1 className="text-sm md:text-3xl font-bold text-yellow-500 tracking-tight">
               The Yummys
             </h1>
           </div>
