@@ -153,7 +153,67 @@ function App() {
           <Route path="/menu" element={<Menu addToCart={addToCart} />} />
         </Routes>
 
-        {/* --- CART MODAL (This was missing!) --- */}
+       {/* --- FOOTER --- */}
+        <footer className="bg-gray-900 text-white pt-12 pb-8 mt-auto">
+          <div className="max-w-6xl mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-8">
+            
+            {/* Column 1: Brand */}
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <span className="text-3xl"></span>
+                <h2 className="text-2xl font-bold text-yellow-500">The Yummys</h2>
+              </div>
+              <p className="text-gray-400 text-sm">
+                Serving the tastiest culinaries in town since 2024. Fresh ingredients, fast delivery.
+              </p>
+            </div>
+
+            {/* Column 2: Quick Links */}
+            <div>
+              <h3 className="text-lg font-bold mb-4 text-yellow-500">Quick Links</h3>
+              <ul className="space-y-2 text-gray-400">
+                <li><Link to="/" className="hover:text-white transition">Home</Link></li>
+                <li><Link to="/menu" className="hover:text-white transition">Full Menu</Link></li>
+                <li><Link to="/about" className="hover:text-white transition">About Us</Link></li>
+                <li><a href="#" className="hover:text-white transition">Contact</a></li>
+              </ul>
+            </div>
+
+            {/* Column 3: Contact */}
+            <div>
+              <h3 className="text-lg font-bold mb-4 text-yellow-500">Contact Us</h3>
+              <ul className="space-y-2 text-gray-400">
+                <li>📍 suite 95 Dolphin Plaza, Ikoyi, Lagos</li>
+                <li>📞 +234 8057080703</li>
+                <li>✉️ https://portfolio-project-two-ashy.vercel.app/</li>
+              </ul>
+            </div>
+
+            {/* Column 4: Newsletter */}
+            <div>
+              <h3 className="text-lg font-bold mb-4 text-yellow-500">Get Offers</h3>
+              <p className="text-gray-400 text-sm mb-4">Subscribe for 10% off your first order!</p>
+              <div className="flex">
+                <input 
+                  type="email" 
+                  placeholder="Enter email" 
+                  className="w-full px-3 py-2 rounded-l-md text-gray-400 focus:outline-none"
+                />
+                <button className="bg-yellow-500 px-4 py-2 rounded-r-md font-bold hover:bg-yellow-600 transition">
+                  Go
+                </button>
+              </div>
+            </div>
+
+          </div>
+
+          {/* Bottom Bar */}
+          <div className="border-t border-gray-800 mt-12 pt-8 text-center text-gray-500 text-sm">
+            © {new Date().getFullYear()} The Yummys. All rights reserved. Built by Lateef.
+          </div>
+        </footer>
+
+        {/* --- CART MODAL --- */}
         {isCartOpen && (
           <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-end">
             <div className="bg-white w-full max-w-md h-full p-6 flex flex-col shadow-2xl animate-slide-in">
@@ -203,6 +263,8 @@ function App() {
       </div>
     </BrowserRouter>
   )
+
+
 }
 
 export default App
