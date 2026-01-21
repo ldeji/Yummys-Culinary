@@ -57,42 +57,93 @@ function App() {
     }
   }
 
+  //  for the mobile menu
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
+
+
   // --- RETURN ---
   return (
     <BrowserRouter>
       <div className="min-h-screen bg-gray-50 font-sans relative">
         
+       
         {/* --- NAVBAR --- */}
-        <nav className="bg-white shadow-md sticky top-0 z-50 p-10">
-          <div className="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
+        <nav className="bg-white shadow-md sticky top-0 z-50">
+          <div className="max-w-6xl mx-auto px-4 py-4">
             
-             {/*Logo */}
-          <div className="flex items-center gap-2">
-            <div className='animate-[bounce_3s_linear_infinite]'>
-            <img src={yummyLogo} alt="Logo" className="h-12 w-12 md:w-20 md:h-20 rounded-full object-cover animate-[spin_5s_linear_infinite]" />
-            </div>
-            <h1 className="text-sm md:text-3xl font-bold text-yellow-500 tracking-tight">
-              The Yummys
-            </h1>
+            <div className="flex justify-between items-center">
+              {/* 1. Logo */}
+              <div className="flex items-center gap-2">
+              <div className='animate-[bounce_3s_linear_infinite]'>
+              <img src={yummyLogo} alt="Logo" className="h-12 w-12 md:w-20 md:h-20 rounded-full object-cover animate-[spin_5s_linear_infinite]" />
+              </div>
+              <h1 className="text-sm md:text-3xl font-bold text-yellow-500 tracking-tight">
+                The Yummys
+              </h1>
           </div>
 
-            <ul className="text-xs gap-4 md:flex md:gap-8 font-medium text-gray-600">
-              <Link to="/" className="hover:text-yellow-600 transition">Home</Link>
-              <Link to="/menu" className="hover:text-yellow-600 transition">Menu</Link>
-              <Link to="/about" className="hover:text-yellow-600 transition">About</Link>
-            </ul>
+              {/* 2. Desktop Menu (Hidden on Mobile) */}
+              <ul className="hidden md:flex gap-8 font-medium text-gray-600">
+                <Link to="/" className="hover:text-orange-600 transition">Home</Link>
+                <Link to="/menu" className="hover:text-orange-600 transition">Menu</Link>
+                <Link to="/about" className="hover:text-orange-600 transition">About</Link>
+              </ul>
 
-            <button 
-              onClick={() => setIsCartOpen(true)} 
-              className="relative bg-orange-100 text-yellow-600 px-4 py-2 rounded-full font-bold hover:bg-orange-200 transition"
-            >
-              🛒 Cart
-              {cartCount > 0 && (
-                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs w-6 h-6 flex items-center justify-center rounded-full border-2 border-white">
-                  {cartCount}
-                </span>
-              )}
-            </button>
+              {/* 3. Right Side Icons (Cart + Hamburger) */}
+              <div className="flex items-center gap-4">
+                
+                {/* Cart Button */}
+                <button 
+                  onClick={() => setIsCartOpen(true)} 
+                  className="relative bg-orange-100 text-orange-600 px-4 py-2 rounded-full font-bold hover:bg-orange-200 transition"
+                >
+                  🛒 <span className="hidden sm:inline">Cart</span> {/* Hides text "Cart" on very small phones */}
+                  {cartCount > 0 && (
+                    <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs w-6 h-6 flex items-center justify-center rounded-full border-2 border-white">
+                      {cartCount}
+                    </span>
+                  )}
+                </button>
+
+                {/* 4. Hamburger Button (Visible ONLY on Mobile) */}
+                <button 
+                  onClick={() => setIsMenuOpen(!isMenuOpen)} 
+                  className="md:hidden text-2xl text-gray-700 focus:outline-none"
+                >
+                  {/* Toggles between Hamburger (☰) and Close (✕) icon */}
+                  {isMenuOpen ? "✕" : "☰"}
+                </button>
+
+              </div>
+            </div>
+
+            {/* 5. Mobile Menu Dropdown (Only shows when isMenuOpen is true) */}
+            {isMenuOpen && (
+              <div className="md:hidden mt-4 pb-4 border-t pt-4 space-y-4 flex flex-col bg-white">
+                <Link 
+                  to="/" 
+                  className="text-gray-700 hover:text-orange-600 font-medium block"
+                  onClick={() => setIsMenuOpen(false)} // Close menu when clicked
+                >
+                  Home
+                </Link>
+                <Link 
+                  to="/menu" 
+                  className="text-gray-700 hover:text-orange-600 font-medium block"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Menu
+                </Link>
+                <Link 
+                  to="/about" 
+                  className="text-gray-700 hover:text-orange-600 font-medium block"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  About
+                </Link>
+              </div>
+            )}
+
           </div>
         </nav>
 
