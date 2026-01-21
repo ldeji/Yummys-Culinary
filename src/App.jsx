@@ -51,7 +51,7 @@ function App() {
     }
     const confirmOrder = window.confirm(`Ready to pay #${cartTotal}?`)
     if (confirmOrder) {
-      alert("Order Placed Successfully! 🍔")
+      alert("Order Placed Successfully!")
       setCart([])
       setIsCartOpen(false)
     }
@@ -95,7 +95,7 @@ function App() {
                 {/* Cart Button */}
                 <button 
                   onClick={() => setIsCartOpen(true)} 
-                  className="relative bg-orange-100 text-orange-600 px-4 py-2 rounded-full font-bold hover:bg-orange-200 transition"
+                  className="relative bg-orange-100 text-yelow-500 px-4 py-2 rounded-full font-bold hover:bg-yellow-600 transition"
                 >
                   🛒 <span className="hidden sm:inline">Cart</span> {/* Hides text "Cart" on very small phones */}
                   {cartCount > 0 && (
