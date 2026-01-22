@@ -217,8 +217,8 @@ function App() {
 
         {/* --- CART MODAL --- */}
         {isCartOpen && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-end">
-            <div className="bg-white w-full max-w-md h-full p-6 flex flex-col shadow-2xl animate-slide-in">
+          <div className="fixed inset-0 bg-yellow-50 bg-opacity-50 z-50 flex justify-end">
+            <div className="bg-yellow-50 w-full max-w-md h-full p-6 flex flex-col shadow-2xl animate-slide-in">
               
               <div className="flex justify-between items-center mb-6 border-b pb-4">
                 <h2 className="text-2xl font-bold">Your Order</h2>
