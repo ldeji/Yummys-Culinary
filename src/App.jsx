@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom'
 import Home from './pages/Home'
 import Menu from './pages/Menu'
+import About from './pages/About'
 import yummyLogo from './assets/yummy.jpeg'
 
 function App() {
@@ -84,9 +85,9 @@ function App() {
 
               {/* 2. Desktop Menu (Hidden on Mobile) */}
               <ul className="hidden md:flex gap-8 font-medium text-gray-600">
-                <Link to="/" className="hover:text-orange-600 transition">Home</Link>
-                <Link to="/menu" className="hover:text-orange-600 transition">Menu</Link>
-                <Link to="/about" className="hover:text-orange-600 transition">About</Link>
+                <Link to="/" className="hover:text-orange-600 hover:scale-120 hover:-translate-y-2 transition duration-300">Home</Link>
+                <Link to="/menu" className="hover:text-orange-600 hover:scale-120 hover:-translate-y-2 transition duration-300">Menu</Link>
+                <Link to="/about" className="hover:text-orange-600 hover:scale-120 hover:-translate-y-2 transition duration-300">About</Link>
               </ul>
 
               {/* 3. Right Side Icons (Cart + Hamburger) */}
@@ -95,7 +96,7 @@ function App() {
                 {/* Cart Button */}
                 <button 
                   onClick={() => setIsCartOpen(true)} 
-                  className="relative bg-orange-100 text-yelow-500 px-4 py-2 rounded-full font-bold hover:bg-yellow-600 transition"
+                  className="relative bg-yellow-200 text-yelow-500 px-4 py-2 rounded-full font-bold hover:bg-yellow-600 transition"
                 >
                   🛒 <span className="hidden sm:inline">Cart</span> {/* Hides text "Cart" on very small phones */}
                   {cartCount > 0 && (
@@ -151,6 +152,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/menu" element={<Menu addToCart={addToCart} />} />
+          <Route path="/about" element={<About />} />
         </Routes>
 
        {/* --- FOOTER --- */}
