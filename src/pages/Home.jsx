@@ -5,12 +5,12 @@ import { Link } from 'react-router-dom'
 const heroImages = [
   {
     id: 1,
-    img: "/images/Ayamase.jpg", // Burger
+    img: "/images/Suya.jpg", // Ayamase
     color: "bg-yellow-300" // Background blob color
   },
   {
     id: 1,
-    img: "/images/Bbq.jpg", // Burger
+    img: "/images/Abacha.jpg", // Bbq
     color: "bg-yellow-300" // Background blob color
   },
   {
@@ -45,7 +45,7 @@ export default function Home() {
         
         {/* --- LEFT SIDE: TEXT --- */}
         <div className="text-center mt-6 md:text-left z-10">
-          <div className="inline-block bg-orange-100 text-yellow-600 px-4 py-1 rounded-full text-sm font-bold mb-6 animate-bounce">
+          <div className="inline-block bg-orange-100 text-yellow-600 px-4 py-4 rounded-full text-sm font-bold mb-6 animate-bounce">
             🚀 Fast Delivery in 30 mins within ikoyi.
           </div>
           
@@ -72,7 +72,7 @@ export default function Home() {
           
           {/* The Blob Background (Changes color) */}
           <div 
-            className={`absolute w-[350px] h-[350px] md:w-[450px] md:h-[450px] rounded-full blur-3xl opacity-50 transition-colors duration-1000 ${heroImages[currentIndex].color}`}
+            className={`absolute w-[350px] h-[350px] md:w-[450px] md:h-[450px] rounded-full blur-2xl opacity-50 transition-colors duration-1000 ${heroImages[currentIndex].color}`}
           ></div>
 
           {/* The Rotating Images */}

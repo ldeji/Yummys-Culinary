@@ -7,7 +7,7 @@ export default function About (){
         <div className="bg-white min-h-screen">
       
       {/* --- HERO SECTION --- */}
-      <section className="py-20 bg-gray-900 text-center px-4">
+      <section className="py-26 bg-gray-900 text-center px-4">
         <h1 className="text-4xl md:text-5xl font-extrabold text-gray-300 mb-6">
           More Than Just <span className="text-yellow-500">Food.</span>
         </h1>
@@ -38,7 +38,7 @@ export default function About (){
           <div>
             <h2 className="text-3xl font-bold mb-6 text-gray-900">It started in a small kitchen in Lagos...</h2>
             <p className="text-gray-600 mb-4 text-lg leading-relaxed">
-              Our founder, Lateef, couldn't find a meal that hit the sweet spot between "Fast" and "Gourmet." So, she decided to make one.
+              Our founder, Lateef, couldn't find a meal that hit the sweet spot between "Fast" and "Gourmet." So, he decided to make one.
             </p>
             <p className="text-gray-600 mb-6 text-lg leading-relaxed">
               What started as a weekend experiment has grown into "The Yummys"—the town's favorite spot for crispy fries, cheesy pizzas, and food that actually taste like real meat.
@@ -59,7 +59,7 @@ export default function About (){
       </section>
 
       {/* --- VALUES SECTION --- */}
-      <section className="bg-gray-900 text-white py-20 px-4">
+      <section className="bg-gray-900 text-white py-26 px-4">
         <div className="max-w-6xl mx-auto">
           <h2 className="text-3xl font-bold text-center mb-12">Why We Are Different</h2>
           

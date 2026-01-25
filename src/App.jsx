@@ -11,7 +11,7 @@ function App() {
   const [isCartOpen, setIsCartOpen] = useState(false)
 
   // --- DERIVED STATE ---
-  const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0)
+  const cartCount = cart.length
   const cartTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0)
 
   // --- LOGIC FUNCTIONS ---
@@ -70,24 +70,25 @@ function App() {
        
         {/* --- NAVBAR --- */}
         <nav className="bg-white shadow-md sticky top-0 z-50">
-          <div className="max-w-6xl mx-auto px-4 py-4">
+          <div className="max-w-6xl mx-auto px-4 py-2">
             
             <div className="flex justify-between items-center">
               {/* 1. Logo */}
               <div className="flex items-center gap-2">
                 <div className='animate-[bounce_3s_linear_infinite]'>
-                  <img src={yummyLogo} alt="Logo" className="h-12 w-12 md:w-20 md:h-20 rounded-full object-cover animate-[spin_5s_linear_infinite]" />
+                  <img src={yummyLogo} alt="Logo" className="h-10 w-10 md:w-10 md:h-10 rounded-full object-cover animate-[spin_5s_linear_infinite]" />
                 </div>
-                <h1 className="text-sm md:text-3xl font-bold text-yellow-500 tracking-tight">
+                {/* <h1 className="text-sm md:text-3xl font-bold text-yellow-500 tracking-tight">
                   The Yummys
-                </h1>
+                </h1> */}
+                <Link to="/" className="text-sm md:text-3xl font-bold text-yellow-500 tracking-tight">The Yummys</Link>
           </div>
 
               {/* 2. Desktop Menu (Hidden on Mobile) */}
               <ul className="hidden md:flex gap-8 font-medium text-gray-600">
-                <Link to="/" className="hover:text-orange-600 hover:scale-120 hover:-translate-y-2 transition duration-300">Home</Link>
-                <Link to="/menu" className="hover:text-orange-600 hover:scale-120 hover:-translate-y-2 transition duration-300">Menu</Link>
-                <Link to="/about" className="hover:text-orange-600 hover:scale-120 hover:-translate-y-2 transition duration-300">About</Link>
+                <Link to="/" className="hover:text-orange-600 hover:scale-120 hover:-translate-y-1 transition duration-300">Home</Link>
+                <Link to="/menu" className="hover:text-orange-600 hover:scale-120 hover:-translate-y-1 transition duration-300">Menu</Link>
+                <Link to="/about" className="hover:text-orange-600 hover:scale-120 hover:-translate-y-1 transition duration-300">About</Link>
               </ul>
 
               {/* 3. Right Side Icons (Cart + Hamburger) */}
@@ -157,7 +158,7 @@ function App() {
 
        {/* --- FOOTER --- */}
         <footer className="bg-gray-900 text-white pt-12 pb-8 mt-auto">
-          <div className="max-w-6xl mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-8">
+          <div className="max-w-6xl mx-auto py-30 px-4 grid grid-cols-1 md:grid-cols-4 gap-8">
             
             {/* Column 1: Brand */}
             <div>
@@ -215,58 +216,134 @@ function App() {
           </div>
         </footer>
 
-        {/* --- CART MODAL --- */}
-        {isCartOpen && (
-          <div className="fixed inset-0 bg-yellow-50 bg-opacity-50 z-50 flex justify-end">
-            <div className="bg-yellow-50 w-full max-w-md h-full p-6 flex flex-col shadow-2xl animate-slide-in">
-              
-              <div className="flex justify-between items-center mb-6 border-b pb-4">
-                <h2 className="text-2xl font-bold">Your Order</h2>
-                <button onClick={() => setIsCartOpen(false)} className="text-gray-500 hover:text-yellow-500 text-xl font-bold">✕</button>
-              </div>
+       {/* --- CART MODAL --- */}
+{isCartOpen && (
+  <div className="fixed inset-0 z-50 flex">
+    
+    {/* 1. LEFT SIDE (The Dark Overlay + Suggestions) */}
+    {/* 'hidden md:flex' hides this whole section on mobile */}
+   
 
-              <div className="flex-1 overflow-y-auto space-y-4">
-                {cart.length === 0 ? (
-                  <p className="text-center text-gray-500 mt-10">Your cart is empty.</p>
-                ) : (
-                  cart.map((item) => (
-                    <div key={item.id} className="flex justify-between items-center border-b pb-2">
-                      <div className="flex items-center gap-4">
-                        <img src={item.image} alt={item.name} className="w-16 h-16 rounded-md object-cover" />
-                        <div>
-                          <h4 className="font-bold">{item.name}</h4>
-                          <div className="flex items-center gap-2 mt-1">
-                            <button onClick={() => updateQuantity(item.id, -1)} className="bg-gray-200 w-6 h-6 rounded hover:bg-gray-300">-</button>
-                            <span className="text-sm font-bold">{item.quantity}</span>
-                            <button onClick={() => updateQuantity(item.id, 1)} className="bg-gray-200 w-6 h-6 rounded hover:bg-gray-300">+</button>
-                          </div>
-                        </div>
-                      </div>
-                      <span className="font-bold text-yellow-600">#{item.price * item.quantity}</span>
-                    </div>
-                  ))
-                )}
-              </div>
-
-              <div className="mt-6 border-t pt-4">
-                <div className="flex justify-between text-xl text-yellow-600 font-bold mb-4">
-                  <span>Total:</span>
-                  <span>#{cartTotal}</span>
-                </div>
-                <button onClick={handleCheckout} className="w-full bg-yellow-500 text-white py-3 rounded-lg font-bold hover:bg-yellow-600 transition">
-                  Checkout Now
+    <div 
+      className="hidden md:flex flex-1 bg-gray-900 bg-opacity-80 items-center justify-center p-8"
+      onClick={() => setIsCartOpen(false)} // Clicking empty space closes modal
+    >
+      <div 
+        className="max-w-2xl w-full" 
+        onClick={(e) => e.stopPropagation()} // Clicking the cards WON'T close modal
+      >
+        {/* Back to menu button  */}
+             <button 
+                onClick={() => setIsCartOpen(false)} 
+                className="text-white bg-yellow-500 hover:bg-yellow-600 text-sm rounded-lg px-3 py-2 mb-6 font-bold"
+              >
+                Back to menu
+              </button>
+        <h3 className="text-yellow-500 text-3xl font-bold mb-6">Don't forget drinks and dessert!</h3>
+           
+        {/* The Mini Menu Grid */}
+        <div className="grid grid-cols-2 gap-6">
+          {/*  'upsell' list here, or reuse your menuItems */}
+          {[
+            { id: 1, name: "Chocolate Shake", price: 2500, image: "https://images.unsplash.com/photo-1572490122747-3968b75cc699?w=500" },
+            { id: 2, name: "Naija fizz", price: 1200, image: "/images/NaijaFizz.png" },
+            { id: 3, name: "CocaCola", price: 500, image: "/images/CocaCola.jpg" },
+            { id: 4, name: "Sprite", price: 500, image: "/images/Sprite.jpg" },
+            { id: 5, name: "Berry Blast", price: 1500, image: "/images/BerryBlast.jpg" },
+            { id: 6, name: "Onion Rings", price: 3000, image: "https://images.unsplash.com/photo-1639024471283-03518883512d?w=500" }
+          ].map((upsell) => (
+            <div key={upsell.id} className="bg-white rounded-xl p-4 flex items-center gap-4 shadow-xl hover:scale-105 transition">
+              <img src={upsell.image} alt={upsell.name} className="w-24 h-24 object-cover rounded-lg" />
+              <div>
+                <h4 className="font-bold text-lg">{upsell.name}</h4>
+                <p className="text-yellow-500 font-bold">#{upsell.price}</p>
+                <button 
+                  onClick={() => addToCart({ ...upsell, quantity: 1, description: "Upsell item" })}
+                  className="mt-2 bg-yellow-500 text-white px-4 py-1 rounded text-sm font-bold hover:bg-yellow-600"
+                >
+                  Add +
                 </button>
+            <div className="flex justify-center items-center">
+           
               </div>
-
+              </div>
             </div>
-          </div>
-        )}
-
+          ))}
+        </div>
       </div>
+    </div>
+
+    {/* 2. RIGHT SIDE (The Actual Cart) */}
+    {/* On mobile, this takes full width. On desktop, it stays on the right. */}
+    <div className="bg-yellow-50 w-full max-w-md h-full p-6 flex flex-col shadow-2xl animate-slide-in">
+      
+      {/* --- HEADER --- */}
+      <div className="flex justify-between items-center mb-6 border-b border-orange-200 pb-4">
+        <h2 className="text-2xl font-bold text-gray-800">Your Order</h2>
+        <button 
+          onClick={() => setIsCartOpen(false)} 
+          className="text-gray-500 hover:text-red-500 text-xl font-bold"
+        >
+          ✕
+        </button>
+      </div>
+
+      {/* --- CART ITEMS LIST --- */}
+      <div className="flex-1 overflow-y-auto space-y-4 pr-2">
+        {cart.length === 0 ? (
+          <div className="text-center mt-20">
+            <span className="text-6xl">🛒</span>
+            <p className="text-gray-500 mt-4">Your cart is empty.</p>
+            <button 
+              onClick={() => setIsCartOpen(false)}
+              className="mt-4 text-orange-600 font-bold underline"
+            >
+              Go to Menu
+            </button>
+          </div>
+        ) : (
+          cart.map((item) => (
+            <div key={item.id} className="flex justify-between items-center bg-white p-3 rounded-lg shadow-sm">
+              <div className="flex items-center gap-3">
+                <img src={item.image} alt={item.name} className="w-16 h-16 rounded-md object-cover" />
+                <div>
+                  <h4 className="font-bold text-gray-800">{item.name}</h4>
+                  <div className="flex items-center gap-2 mt-1">
+                    <button onClick={() => updateQuantity(item.id, -1)} className="bg-orange-100 text-orange-600 w-6 h-6 rounded hover:bg-orange-200">-</button>
+                    <span className="text-sm font-bold">{item.quantity}</span>
+                    <button onClick={() => updateQuantity(item.id, 1)} className="bg-orange-100 text-orange-600 w-6 h-6 rounded hover:bg-orange-200">+</button>
+                  </div>
+                </div>
+              </div>
+              <div className="text-right">
+                <span className="block font-bold text-orange-600">#{item.price * item.quantity}</span>
+                <button onClick={() => removeFromCart(item.id)} className="text-xs text-red-400 hover:text-red-600 underline">Remove</button>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* --- FOOTER --- */}
+      <div className="mt-6 border-t border-orange-200 pt-4">
+        <div className="flex justify-between text-xl font-bold mb-4 text-gray-800">
+          <span>Total:</span>
+          <span>#{cartTotal}</span>
+        </div>
+        <button 
+          onClick={handleCheckout} 
+          className="w-full bg-yellow-500 text-white py-4 rounded-xl font-bold hover:bg-yellow-600 transition shadow-lg transform hover:-translate-y-1"
+        >
+          Checkout Now
+        </button>
+      </div>
+
+    </div>
+   </div>
+   )}
+   </div>
     </BrowserRouter>
   )
 
-
 }
-
 export default App
