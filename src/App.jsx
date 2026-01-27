@@ -97,7 +97,7 @@ function App() {
                 {/* Cart Button */}
                 <button 
                   onClick={() => setIsCartOpen(true)} 
-                  className="relative bg-yellow-200 text-yelow-500 px-4 py-2 rounded-full font-bold hover:bg-yellow-600 transition"
+                  className="relative bg-yellow-500 text-yelow-500 px-4 py-2 rounded-full font-bold hover:bg-yellow-600 transition"
                 >
                   🛒 <span className="hidden sm:inline">Cart</span> {/* Hides text "Cart" on very small phones */}
                   {cartCount > 0 && (
@@ -220,7 +220,7 @@ function App() {
 {isCartOpen && (
   <div className="fixed inset-0 z-50 flex">
     
-    {/* 1. LEFT SIDE (The Dark Overlay + Suggestions) */}
+    {/* 1. LEFT SIDE (The Dark Overlay) */}
     {/* 'hidden md:flex' hides this whole section on mobile */}
    
 
@@ -243,7 +243,7 @@ function App() {
            
         {/* The Mini Menu Grid */}
         <div className="grid grid-cols-2 gap-6">
-          {/*  'upsell' list here, or reuse your menuItems */}
+          {/*  'upsell' list here */}
           {[
             { id: 1, name: "Chocolate Shake", price: 2500, image: "https://images.unsplash.com/photo-1572490122747-3968b75cc699?w=500" },
             { id: 2, name: "Naija fizz", price: 1200, image: "/images/NaijaFizz.png" },
@@ -316,8 +316,8 @@ function App() {
                 </div>
               </div>
               <div className="text-right">
-                <span className="block font-bold text-orange-600">#{item.price * item.quantity}</span>
-                <button onClick={() => removeFromCart(item.id)} className="text-xs text-red-400 hover:text-red-600 underline">Remove</button>
+                <span className="block font-bold text-yellow-500">#{item.price * item.quantity}</span>
+                <button onClick={() => removeFromCart(item.id)} className="text-xs text-yellow-600 hover:text-yellow-700 underline">Remove</button>
               </div>
             </div>
           ))
