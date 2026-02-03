@@ -1,7 +1,5 @@
 import React, { useState } from 'react' // Import useState
 
-
-
 export default function Menu({ addToCart }) {
    // Track which item is open. Null means no modal is open.
   const [selectedItem, setSelectedItem] = useState(null)

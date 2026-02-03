@@ -68,18 +68,17 @@ export default function Home() {
         </div>
 
         {/* --- RIGHT SIDE: ANIMATION --- */}
-        <div className="relative h-[400px] w-full flex items-center justify-center">
+        <div className="relative h-100 w-full flex items-center justify-center">
           
           {/* The Blob Background (Changes color) */}
           <div 
-            className={`absolute w-[350px] h-[350px] md:w-[450px] md:h-[450px] rounded-full blur-2xl opacity-50 transition-colors duration-1000 ${heroImages[currentIndex].color}`}
+            className={`absolute w-87.5 h-87.5 md:w-112.5 md:h-112.5 rounded-full blur-2xl opacity-50 transition-colors duration-1000 ${heroImages[currentIndex].color}`}
           ></div>
 
           {/* The Rotating Images */}
-          <div className="relative w-[300px] h-[300px] md:w-[400px] md:h-[400px]">
+          <div className="relative w-75 h-75 md:w-100 md:h-100">
             {heroImages.map((item, index) => (
-              <img 
-                key={item.id}
+              <img o key={item.id}
                 src={item.img} 
                 alt="Food"
                 className={`absolute inset-0 w-full h-full object-cover rounded-full shadow-2xl transition-all duration-1000 ease-in-out transform contrast-130
