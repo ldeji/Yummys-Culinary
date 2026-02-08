@@ -186,7 +186,7 @@ function App() {
             <div>
               <h3 className="text-lg font-bold mb-4 text-yellow-500">Contact Us</h3>
               <ul className="space-y-2 text-gray-400">
-                <li>📍 suite 95 Dolphin Plaza, Ikoyi, Lagos</li>
+                <li>📍 Suite 95 Dolphin Plaza, Ikoyi, Lagos</li>
                 <li>📞 +234 8057080703</li>
                 <li>✉️ https://portfolio-project-two-ashy.vercel.app/</li>
               </ul>
