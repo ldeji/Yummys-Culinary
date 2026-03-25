@@ -70,13 +70,13 @@ function App() {
        
         {/* --- NAVBAR --- */}
         <nav className="bg-white shadow-md sticky top-0 z-50">
-          <div className="max-w-6xl mx-auto px-4 py-2">
+          <div className="max-w-6xl mx-auto px-4 py-5">
             
             <div className="flex justify-between items-center">
               {/* 1. Logo */}
               <div className="flex items-center gap-2">
                 <div className='animate-[bounce_3s_linear_infinite]'>
-                  <img src={yummyLogo} alt="Logo" className="h-10 w-10 md:w-10 md:h-10 rounded-full object-cover animate-[spin_5s_linear_infinite]" />
+                  <img src={yummyLogo} alt="Logo" className="h-10 w-10 md:w-10 md:h-10 rounded-full object-cover animate-[spin_7s_linear_infinite]" />
                 </div>
                 {/* <h1 className="text-sm md:text-3xl font-bold text-yellow-500 tracking-tight">
                   The Yummys

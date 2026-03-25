@@ -7,8 +7,8 @@ export default function About (){
         <div className="bg-white min-h-screen">
       
       {/* --- HERO SECTION --- */}
-      <section className="py-26 bg-gray-900 text-center px-4">
-        <h1 className="text-4xl md:text-5xl font-extrabold text-gray-300 mb-6">
+      <section className="py-26 px-4 bg-gray-900 text-center">
+        <h1 className="text-4xl md:text-5xl font-extrabold text-gray-300 mb-4">
           More Than Just <span className="text-yellow-500">Food.</span>
         </h1>
         <p className="text-xl text-gray-300 max-w-2xl mx-auto">
@@ -28,11 +28,11 @@ export default function About (){
               className="rounded-2xl shadow-2xl w-full h-Auto"
             />
             {/* Floating Badge */}
-            <div className="absolute -bottom-6 -right-6 bg-white p-6 rounded-xl shadow-xl hidden md:block">
+            <div className="absolute -bottom-6 -right-6 bg-white p-6 rounded-xl shadow-4xl hidden md:block">
               <span className="block text-4xl font-bold text-yellow-500">Since</span>
               <span className="block text-xl font-bold text-gray-800">2024</span>
             </div>
-          </div>
+           </div>
 
           {/* Text */}
           <div>
