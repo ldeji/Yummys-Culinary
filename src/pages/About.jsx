@@ -1,6 +1,7 @@
 import React from 'react'
 import { Link } from 'react-router-dom' 
 import Chef from '../assets/cheffo.jpeg'
+import { brandConfig } from '../config/brands';
 
 export default function About (){
     return(
@@ -9,7 +10,7 @@ export default function About (){
       {/* --- HERO SECTION --- */}
       <section className="py-26 px-4 bg-gray-900 text-center">
         <h1 className="text-4xl md:text-5xl font-extrabold text-gray-300 mb-4">
-          More Than Just <span className="text-yellow-500">Food.</span>
+          More Than Just <span className="text-style={{ color: brandConfig.primaryColor }}">Food.</span>
         </h1>
         <p className="text-xl text-gray-300 max-w-2xl mx-auto">
           We believe that a great meal can fix a bad day. That’s why we wake up every morning to grill, season, and serve happiness.
@@ -28,8 +29,8 @@ export default function About (){
               className="rounded-2xl shadow-2xl w-full h-Auto"
             />
             {/* Floating Badge */}
-            <div className="absolute -bottom-6 -right-6 bg-white p-6 rounded-xl shadow-4xl hidden md:block">
-              <span className="block text-4xl font-bold text-yellow-500">Since</span>
+            <div className="absolute -bottom-6 -right-6 style={ backgroundColor: brandConfig.backGround }} p-6 rounded-xl shadow-4xl hidden md:block">
+              <span className="block text-4xl font-bold text-style={{ color: brandConfig.primaryColor }}">Since</span>
               <span className="block text-xl font-bold text-gray-800">2024</span>
             </div>
            </div>
@@ -45,11 +46,11 @@ export default function About (){
             </p>
             <div className="flex gap-4">
               <div className="bg-orange-100 p-4 rounded-lg text-center w-32">
-                <span className="block text-2xl font-bold text-yellow-500">15k+</span>
+                <span className="block text-2xl font-bold text-style={{ color: brandConfig.primaryColor }}">15k+</span>
                 <span className="text-sm text-gray-600">Happy Eaters</span>
               </div>
               <div className="bg-orange-100 p-4 rounded-lg text-center w-32">
-                <span className="block text-2xl font-bold text-yellow-500">30m</span>
+                <span className="block text-2xl font-bold text-style={{ color: brandConfig.primaryColor }}">30m</span>
                 <span className="text-sm text-gray-600">Delivery Time</span>
               </div>
             </div>
@@ -92,7 +93,7 @@ export default function About (){
       <section className="py-20 text-center px-4">
         <h2 className="text-3xl font-bold mb-6">Ready to taste the difference?</h2>
         <Link to="/menu">
-          <button className="bg-yellow-500 text-white px-10 py-4 rounded-full text-lg font-bold hover:bg-yellow-600 transition shadow-lg hover:scale-105">
+          <button className="bg-style={{ color: brandConfig.primaryColor }} text-white px-10 py-4 rounded-full text-lg font-bold hover:bg-yellow-600 transition shadow-lg hover:scale-105">
             Order Now <span className="text-3xl">🍴</span>
           </button>
         </Link>

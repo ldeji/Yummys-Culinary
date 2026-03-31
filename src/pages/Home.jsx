@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { brandConfig } from '../config/brands';
 
 // 1. The list of images to rotate
 const heroImages = [
@@ -38,29 +39,43 @@ export default function Home() {
   }, [])
 
   return (
-    <div className="min-h-[85vh] bg-slate-900 flex items-center justify-center px-4 overflow-hidden">
+    <div 
+    style={{ backgroundColor:brandConfig.backColor }}
+    className="min-h-[85vh] flex items-center justify-center px-4 overflow-hidden">
       
       {/* CONTAINER: Flex Column on Mobile, Row on Desktop */}
       <div className="max-w-6xl w-full grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
         
         {/* --- LEFT SIDE: TEXT --- */}
         <div className="text-center mt-6 md:text-left z-10">
-          <div className="inline-block bg-orange-100 text-yellow-600 px-4 py-4 rounded-full text-sm font-bold mb-6">
+          <div 
+          style={{ color: brandConfig.primaryColor }}
+          className="inline-block bg-orange-100 px-4 py-4 rounded-full text-sm font-bold mb-6">
             🚀 Fast Delivery in 30 mins within ikoyi.
           </div>
           
-          <h1 className="text-5xl md:text-7xl font-extrabold text-yellow-500 leading-tight mb-6">
-            Hungry? <br />
-            <span className="text-yellow-500">We got you.</span>
+          <h1 
+          style={{ color: brandConfig.accentColor }}
+          className="text-5xl md:text-7xl font-extrabold leading-tight mb-6">
+            {brandConfig.name === "Yummys" ? "Hungry?" : "Need Pantry?"} <br />
+            
+            <span 
+            style={{ color: brandConfig.lightColor }}
+            >We got you.</span>
           </h1>
           
-          <p className="text-xl text-gray-500 mb-8 max-w-lg mx-auto md:mx-0">
-            Experience culinary excellence with locally sourced ingredients and modern atmosphere.
+          <p 
+          style={{ color: brandConfig.accentColor }}
+          className="text-xl mb-8 max-w-lg mx-auto md:mx-0">
+            {brandConfig.name === "Yummys" ? " Experience culinary excellence with locally sourced ingredients and modern atmosphere." : "A curated space for premium imported snacks, drinks, and pantry essentials — bringing global tastes closer to you."}
+           
           </p>
           
           <div className="flex gap-4 justify-center md:justify-start">
             <Link to="/menu">
-              <button className="bg-yellow-500 text-white px-8 py-4 rounded-full text-lg font-bold hover:bg-yellow-600 transition shadow-xl hover:scale-105">
+              <button 
+              style={{ backgroundColor: brandConfig.primaryColor }} 
+              className=" px-8 py-4 rounded-full text-lg font-bold transition-all duration-300 shadow-xl hover:scale-105">
                 Order Now <span className="text-3xl">🍴</span>
               </button>
             </Link>

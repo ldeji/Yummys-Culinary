@@ -1,5 +1,5 @@
 {
-  "name": "tailwindcss4",
+  "name": "yummys",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -7,10 +7,15 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "start:yummys": "env-cmd -f .env.yummys vite",
+    "start:pantry": "env-cmd -f .env.pantry vite",
+    "build:yummys": "env-cmd -f .env.yummys vite build",
+    "build:pantry": "env-cmd -f .env.pantry vite build"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.18",
+    "env-cmd": "^11.0.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-router-dom": "^7.12.0",
