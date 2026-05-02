@@ -81,7 +81,7 @@ className="bg-white shadow-md sticky top-0 z-50">
     <div className="flex justify-between items-center">     
       {/* 1. Logo & Brand Name */}
       <div className="flex items-center gap-2">
-        <div className='animate-[bounce_3s_linear_infinite]'>
+        {/* <div className='animate-[bounce_3s_linear_infinite]'> */}
           <img 
             src={brandConfig.logo} 
             alt="Logo" 
