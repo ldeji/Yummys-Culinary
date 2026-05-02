@@ -16,7 +16,7 @@ const brands = {
     backColor: "#111827", // dark-gray-900
   },
   "pantry-co": {
-    name: "pantry - co",
+    name: "Pantry & Co.",
     logo: "/images/pantry/pantryLogo.webp",
     imageFolder: "/images/pantry", // <--- Points to dry goods photos
     supportEmail: "info@pantryandco.com",

@@ -6,22 +6,22 @@ import { brandConfig } from '../config/brands';
 const heroImages = [
   {
     id: 1,
-    img: "/images/Suya.jpg", // Ayamase
+    img: brandConfig.name === "Yummys" ? "images/yummys/Amala.jpg" : "images/pantry/NesquikChocolate.webp",
     color: "bg-yellow-300" // Background blob color
   },
   {
     id: 1,
-    img: "/images/Abacha.jpg", // Bbq
+    img: brandConfig.name === "Yummys" ? "images/yummys/Abacha.jpg" : "images/pantry/PancakeMix.webp", // Bbq
     color: "bg-yellow-300" // Background blob color
   },
   {
     id: 2,
-    img: "https://images.unsplash.com/photo-1604382354936-07c5d9983bd3?w=600", // Pizza
+    img: brandConfig.name === "Yummys" ? "https://images.unsplash.com/photo-1604382354936-07c5d9983bd3?w=600" : "images/pantry/BarillaPasta.webp", // Pizza
     color: "bg-yellow-100"
   },
   {
     id: 3,
-    img: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600", // Salad/Bowl
+    img: brandConfig.name === "Yummys" ? "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600" : "images/pantry/QuakerQuickOne-MinuteOats.webp", // Salad/Bowl
     color: "bg-yellow-300"
   },
 ]
@@ -74,7 +74,7 @@ export default function Home() {
             <Link to="/menu">
               <button 
               style={{ backgroundColor: brandConfig.primaryColor }} 
-              className=" px-8 py-4 rounded-full text-lg font-bold transition-all duration-300 shadow-xl hover:scale-105">
+              className=" px-8 py-4 rounded-full text-lg font-bold transition-all duration-300 shadow-xl hover:scale-105 hover:brightness-130">
                 Order Now <span className="text-3xl">{brandConfig.name === "Yummys" ? "🍴" : "🌾"}</span>
               </button>
             </Link>
@@ -92,7 +92,8 @@ export default function Home() {
           {/* The Rotating Images */}
           <div className="relative w-75 h-75 md:w-100 md:h-100">
             {heroImages.map((item, index) => (
-              <img o key={item.id}
+              <img 
+                key={item.id}
                 src={item.img} 
                 alt="Food"
                 className={`absolute inset-0 w-full h-full object-cover rounded-full shadow-2xl transition-all duration-1000 ease-in-out transform contrast-130

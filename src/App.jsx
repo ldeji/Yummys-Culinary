@@ -183,7 +183,9 @@ className="bg-white shadow-md sticky top-0 z-50">
         </Routes>
 
        {/* --- FOOTER --- */}
-        <footer className="bg-gray-900 text-white pt-12 pb-8 mt-auto">
+        <footer
+        style={{ backgroundColor:brandConfig.backColor }}
+         className=" text-white pt-12 pb-8 mt-auto">
           <div className="max-w-6xl mx-auto py-30 px-4 grid grid-cols-1 md:grid-cols-4 gap-8">
             
             {/* Column 1: Brand */}
@@ -196,7 +198,8 @@ className="bg-white shadow-md sticky top-0 z-50">
                 />
               </div>
               <p className="text-gray-400 text-sm">
-                Serving the tastiest culinaries in town since 2024. Fresh ingredients, fast delivery.
+                
+                {brandConfig.name === "Yummys" ? "Serving the tastiest culinaries in town since 2024. Fresh ingredients, fast delivery." : "Serving the best pantry essentials in town since 2024. Fresh ingredients, fast delivery."}
               </p>
             </div>
 
@@ -231,7 +234,9 @@ className="bg-white shadow-md sticky top-0 z-50">
                   placeholder="Enter email" 
                   className="w-full px-3 py-2 rounded-l-md text-gray-400 focus:outline-none"
                 />
-                <button className="bg-style={{ color: brandConfig.primaryColor }} px-4 py-2 rounded-r-md font-bold hover:bg-yellow-600 transition">
+                <button
+                style={{ backgroundColor: brandConfig.primaryColor, color: 'white' }}
+                 className="px-4 py-2 rounded-r-md font-bold hover:scale-103 hover:brightness-130 transition">
                   Go
                 </button>
               </div>
