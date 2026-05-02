@@ -51,7 +51,7 @@ export default function Home() {
           <div 
           style={{ color: brandConfig.primaryColor }}
           className="inline-block bg-orange-100 px-4 py-4 rounded-full text-sm font-bold mb-6">
-            🚀 Fast Delivery in 30 mins within ikoyi.
+             Fast Delivery in 30 mins within ikoyi.
           </div>
           
           <h1 
@@ -67,8 +67,7 @@ export default function Home() {
           <p 
           style={{ color: brandConfig.accentColor }}
           className="text-xl mb-8 max-w-lg mx-auto md:mx-0">
-            {brandConfig.name === "Yummys" ? " Experience culinary excellence with locally sourced ingredients and modern atmosphere." : "A curated space for premium imported snacks, drinks, and pantry essentials — bringing global tastes closer to you."}
-           
+            {brandConfig.name === "Yummys" ? " Experience culinary excellence with locally sourced ingredients and modern atmosphere." : "A curated space for premium imported snacks, drinks, and pantry essentials — bringing global tastes closer to you."}       
           </p>
           
           <div className="flex gap-4 justify-center md:justify-start">
@@ -76,7 +75,7 @@ export default function Home() {
               <button 
               style={{ backgroundColor: brandConfig.primaryColor }} 
               className=" px-8 py-4 rounded-full text-lg font-bold transition-all duration-300 shadow-xl hover:scale-105">
-                Order Now <span className="text-3xl">🍴</span>
+                Order Now <span className="text-3xl">{brandConfig.name === "Yummys" ? "🍴" : "🌾"}</span>
               </button>
             </Link>
           </div>
