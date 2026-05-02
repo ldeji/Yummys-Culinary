@@ -85,7 +85,7 @@ className="bg-white shadow-md sticky top-0 z-50">
           <img 
             src={brandConfig.logo} 
             alt="Logo" 
-            className="h-8 w-8 md:w-10 md:h-10 rounded-full object-cover animate-[spin_7s_linear_infinite]" 
+            className="h-8 w-8 md:w-10 md:h-10 rounded-full object-cover" 
           />
         </div>
         
