@@ -236,7 +236,7 @@ className="bg-white shadow-md sticky top-0 z-50">
                 />
                 <button
                 style={{ backgroundColor: brandConfig.primaryColor, color: 'white' }}
-                 className="px-4 py-2 rounded-r-md font-bold hover:scale-103 hover:brightness-130 transition">
+                 className="px-4 py-2 rounded-r-md font-bold hover:scale-95 hover:brightness-130 transition">
                   Go
                 </button>
               </div>

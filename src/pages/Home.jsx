@@ -74,7 +74,7 @@ export default function Home() {
             <Link to="/menu">
               <button 
               style={{ backgroundColor: brandConfig.primaryColor }} 
-              className=" px-8 py-4 rounded-full text-lg font-bold transition-all duration-300 shadow-xl hover:scale-105 hover:brightness-130">
+              className=" px-8 py-4 rounded-full text-lg font-bold transition-all duration-300 shadow-xl hover:scale-95 hover:brightness-130">
                 Order Now <span className="text-3xl">{brandConfig.name === "Yummys" ? "🍴" : "🌾"}</span>
               </button>
             </Link>
