@@ -17,7 +17,7 @@ const brands = {
   },
   "pantry-co": {
     name: "pantry - co",
-    logo: "/images/pantry/pantryLogo.png",
+    logo: "/images/pantry/pantryLogo.webp",
     imageFolder: "/images/pantry", // <--- Points to dry goods photos
     supportEmail: "info@pantryandco.com",
     footerText: "© 2026 Pantry & Co",
