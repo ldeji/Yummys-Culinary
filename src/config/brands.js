@@ -29,6 +29,8 @@ const brands = {
   }
 };
 
+
 const currentBrandKey = import.meta.env.VITE_BRAND || 'yummys';
-export const brandConfig = brands[currentBrandKey];
+console.log("Looking for brand key:", currentBrandKey);
+export const brandConfig = brands[currentBrandKey] || brands['yummys'];
 export default brands;
