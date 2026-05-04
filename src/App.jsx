@@ -63,6 +63,8 @@ function App() {
   //  for the mobile menu
   const [isMenuOpen, setIsMenuOpen] = useState(false)
 
+  const [selectedItem, setSelectedItem] = useState(null) //
+   const upsell = brandConfig?.items || []; //
 
   // --- RETURN ---
   return (
@@ -267,44 +269,56 @@ className="bg-white shadow-md sticky top-0 z-50">
         onClick={(e) => e.stopPropagation()} // Clicking the cards WON'T close modal
       >
         {/* Back to menu button  */}
-             <button 
-                onClick={() => setIsCartOpen(false)} 
-                className="text-white bg-style={{ color: brandConfig.primaryColor }} hover:bg-yellow-600 text-sm rounded-lg px-3 py-2 mb-6 font-bold"
-              >
-                Back to menu
-              </button>
-        <h3 className="text-style={{ color: brandConfig.primaryColor }} text-3xl font-bold mb-6">Don't forget drinks and dessert!</h3>
+     <Link to="/menu">
+        <button 
+        onClick={() => {
+          setIsCartOpen(false); // Close the cart
+          navigate('/menu');    // Move the user to the /menu page
+        }} 
+        style={{ backgroundColor: brandConfig.primaryColor }}
+        className="text-white text-sm rounded-lg px-3 py-2 mb-6 font-bold transition hover:brightness-110 active:scale-90"
+          >
+        {brandConfig.name === "Yummys" ? "Back to menu" : "Back to shop"} 
+      </button> 
+      </Link>
+        <h3
+        style={{ color: brandConfig.primaryColor }}
+         className=" text-3xl font-bold mb-6">
+          {brandConfig.name === "Yummys" ? "Don't forget drinks and dessert!" : "You might also like!"}</h3>
            
         {/* The Mini Menu Grid */}
-        <div className="grid grid-cols-2 gap-6">
-          {/* Did you forget anything? 'upsell' list here */}
-          {[
-            { id: 1, name: "Chocolate Shake", price: 2500, image: "https://images.unsplash.com/photo-1572490122747-3968b75cc699?w=500" },
-            { id: 2, name: "Naija fizz", price: 1200, image: "/images/NaijaFizz.png" },
-            { id: 3, name: "CocaCola", price: 500, image: "/images/CocaCola.jpg" },
-            { id: 4, name: "Sprite", price: 500, image: "/images/Sprite.jpg" },
-            { id: 5, name: "Berry Blast", price: 1500, image: "/images/BerryBlast.jpg" },
-            { id: 6, name: "Onion Rings", price: 3000, image: "https://images.unsplash.com/photo-1639024471283-03518883512d?w=500" }
-          ].map((upsell) => (
-            <div key={upsell.id} className="bg-white rounded-xl p-4 flex items-center gap-4 shadow-xl hover:scale-105 transition">
-              <img src={upsell.image} alt={upsell.name} className="w-24 h-24 object-cover rounded-lg" />
-              <div>
-                <h4 className="font-bold text-lg">{upsell.name}</h4>
-                <p className="text-style={{ color: brandConfig.primaryColor }} font-bold">#{upsell.price}</p>
-                <button 
-                  onClick={() => addToCart({ ...upsell, quantity: 1, description: "Upsell item" })}
-                  style={{ backgroundColor: brandConfig.primaryColor }}
-                  className="mt-2 text-white px-4 py-1 rounded text-sm font-bold hover:bg-yellow-600"
-                >
-                  Add +
-                </button>
-            <div className="flex justify-center items-center">
-           
-              </div>
-              </div>
-            </div>
-          ))}
-        </div>
+<div className="grid grid-cols-2 gap-6">
+  {/* Map from the brandConfig instead of a hardcoded list */}
+  {(brandConfig?.upsells || []).map((upsell) => (
+    <div key={upsell.id} className="bg-white rounded-xl p-4 flex items-center gap-4 shadow-xl hover:scale-105 transition">
+      
+      {/* Dynamic Image Path */}
+      <img 
+        src={`${brandConfig.imageFolder}/${upsell.image}`}
+        alt={upsell.name} 
+        className="w-24 h-24 object-cover rounded-lg bg-gray-50" 
+      />
+
+      <div>
+        <h4 className="font-bold text-lg">{upsell.name}</h4>
+        
+        {/* FIXED: Correct syntax for brand color on price */}
+        <p style={{ color: brandConfig.primaryColor }} className="font-bold">
+          ₦{upsell.price.toLocaleString()}
+        </p>
+
+        <button 
+          onClick={() => addToCart({ ...upsell, quantity: 1, description: "Upsell item" })}
+          style={{ backgroundColor: brandConfig.primaryColor }}
+          // Removed hover:bg-yellow-600 and used brightness for dynamic hover
+          className="mt-2 text-white px-4 py-1 rounded text-sm font-bold transition hover:brightness-110 active:scale-95"
+        >
+          Add +
+        </button>
+      </div>
+    </div>
+  ))}
+</div>
       </div>
     </div>
 

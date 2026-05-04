@@ -1,6 +1,6 @@
 // src/config/brands.js
-import { yummysItems } from '../data/yummysData';
-import { pantryItems } from '../data/pantryData';
+import { yummysItems, yummysUpsells } from '../data/yummysData';
+import { pantryItems, pantryUpsells } from '../data/pantryData';
 
 const brands = {
   yummys: {
@@ -9,7 +9,9 @@ const brands = {
     imageFolder: "/images/yummys", // <--- Points to restaurant photos
     supportEmail: "support@yummys.com",
     footerText: "© 2026 Yummys Restaurant",
-    items: yummysItems, // <--- Attach the restaurant data
+    items: yummysItems, // Attach the restaurant data
+    upsells: yummysUpsells, // Attach the upsell data
+    aboutImage: "/images/yummys/cheffo.jpeg",
     primaryColor: "#EAB308", // yellow-500
     lightColor: "#EAB308",   // yellow-500
     accentColor: "#E5E7EB",  // gray-200
@@ -22,6 +24,8 @@ const brands = {
     supportEmail: "info@pantryandco.com",
     footerText: "© 2026 Pantry & Co",
     items: pantryItems,
+    upsells: pantryUpsells,
+    aboutImage: "/images/pantry/Knorr.png",
     primaryColor:  "#4a6d43", // green-700
     lightColor: "#d40785",   // fushia
     accentColor: "#c5a47f",  // peach

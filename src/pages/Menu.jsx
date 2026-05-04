@@ -2,10 +2,10 @@ import React, { useState } from 'react'
 import { brandConfig } from '../config/brands';
 
 export default function Menu({ addToCart }) {
-  const [selectedItem, setSelectedItem] = useState(null)
+  const [selectedItem, setSelectedItem] = useState(null) // For the product detail modal
 
   // SAFETY CHECK: If brandConfig.items is missing, an empty list [] instead of crashing
-  const menuItems = brandConfig?.items || [];
+  const menuItems = brandConfig?.items || []; 
 
   return (
     <section 
