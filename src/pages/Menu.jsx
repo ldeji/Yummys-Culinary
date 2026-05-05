@@ -1,59 +1,100 @@
 import React, { useState } from 'react'
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { brandConfig } from '../config/brands';
 
 export default function Menu({ addToCart }) {
-  const [selectedItem, setSelectedItem] = useState(null) // For the product detail modal
+  const [selectedItem, setSelectedItem] = useState(null); // State for the Product Detail Modal
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
 
-  // SAFETY CHECK: If brandConfig.items is missing, an empty list [] instead of crashing
+  // 1. Search Logic
+  const searchQuery = searchParams.get("search")?.toLowerCase() || "";
   const menuItems = brandConfig?.items || []; 
+
+  // 2. Filter logic based on the search query
+  const filteredItems = menuItems.filter(item => 
+    item.name.toLowerCase().includes(searchQuery) || 
+    item.description?.toLowerCase().includes(searchQuery)
+  );
 
   return (
     <section 
       style={{ backgroundColor: brandConfig?.backColor || '#ffffff' }} 
       className="p-10 max-w-7xl mx-auto min-h-screen"
     >
-      <h2 
-        style={{ color: brandConfig?.accentColor || '#000000' }} 
-        className="text-3xl font-bold text-center mb-8"
-      >
-        Our Full {brandConfig?.name === "Yummys" ? "Menu" : "Catalog"}
-      </h2>
+      {/* --- SEARCH HEADER --- */}
+      {searchQuery && (
+        <div className="mb-10 text-center">
+          <h2 className="text-2xl font-bold">
+            Results for: <span style={{ color: brandConfig.primaryColor }}>"{searchQuery}"</span>
+          </h2>
+          <button 
+            onClick={() => navigate('/menu')} 
+            className="text-gray-400 hover:text-gray-600 underline text-sm"
+          >
+            Clear search and show all
+          </button>
+        </div>
+      )}
+
+      {!searchQuery && (
+        <h2 
+          style={{ color: brandConfig?.accentColor || '#000000' }} 
+          className="text-3xl font-bold text-center mb-8"
+        >
+          Our Full {brandConfig?.name === "Yummys" ? "Menu" : "Catalog"}
+        </h2>
+      )}
       
-      {/* If there are no items, show a message instead of crashing */}
-      {menuItems.length === 0 ? (
-        <div className="text-center py-20">
-          <p className="text-xl text-gray-500">No items found. Please check your data files.</p>
+      {/* --- PRODUCTS GRID --- */}
+      {filteredItems.length === 0 ? (
+        <div className="text-center py-20 bg-white rounded-3xl shadow-inner">
+          <div className="text-6xl mb-4">🔍❌</div>
+          <p className="text-2xl font-bold text-gray-800">
+             {brandConfig.name === "Yummys" 
+               ? "Sorry, this dish is not available." 
+               : "Sorry, we don't have that in stock."}
+          </p>
+          <button 
+            onClick={() => navigate('/menu')}
+            style={{ backgroundColor: brandConfig.primaryColor }}
+            className="mt-6 px-6 py-2 text-white rounded-full font-bold hover:brightness-110"
+          >
+            Browse everything else →
+          </button>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {menuItems.map((item) => (
-            <div key={item.id} className="bg-white rounded-xl shadow-lg overflow-hidden hover:scale-102 transition duration-300">
+          {filteredItems.map((item) => (
+            <div key={item.id} className="bg-white rounded-xl shadow-lg overflow-hidden hover:scale-102 transition duration-300 flex flex-col">
               
-              <div onClick={() => setSelectedItem(item)} className="cursor-pointer">
+              {/* Clicking this area opens the Product Detail Modal */}
+              <div onClick={() => setSelectedItem(item)} className="cursor-pointer flex-grow">
                 <img 
                   src={`${brandConfig.imageFolder}/${item.image}`} 
                   alt={item.name} 
-                  className="w-full h-90 aspect-video object-cover transition duration-300 hover:contrast-120" 
+                  className="w-full h-72 object-cover transition duration-300 hover:contrast-120" 
                 />
                 
                 <div className="p-5 pb-0">
                   <div className="flex justify-between items-center mb-2">
                     <h3 className="font-bold text-lg">{item.name}</h3>
-                    <span style={{ color: brandConfig.lightColor }} className="font-bold">
+                    <span style={{ color: brandConfig.accentColor }} className="font-bold">
                       ₦{item.price?.toLocaleString()}
                     </span>
                   </div>
-                  <p style={{ color: brandConfig.primaryColor }} className="text-3xl mb-4">{item.description}</p>
+                  <p className="text-gray-500 text-sm mb-4 line-clamp-2">{item.description}</p>
                   <p style={{ color: brandConfig.primaryColor }} className="text-xs font-bold mb-4 hover:underline">
                     View Details →
                   </p>
                 </div>
               </div>
 
+              {/* Add to Cart Button (Fixed at bottom) */}
               <div className="p-5 pt-0">
                 <button 
                   onClick={(e) => {
-                    e.stopPropagation();
+                    e.stopPropagation(); // Prevents opening the modal when clicking the button
                     addToCart(item);
                   }}
                   style={{ backgroundColor: brandConfig.primaryColor }}
@@ -67,11 +108,12 @@ export default function Menu({ addToCart }) {
         </div>
       )}
 
-      {/* --- PRODUCT DETAIL MODAL --- */}
+      {/* --- PRODUCT DETAIL MODAL (RESTORED) --- */}
       {selectedItem && (
-        <div className="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden flex flex-col md:flex-row animate-scale-in relative">
+        <div className="fixed inset-0 bg-black bg-opacity-60 z-[100] flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full overflow-hidden flex flex-col md:flex-row animate-scale-in relative">
             
+            {/* Close Modal Button */}
             <button 
               onClick={() => setSelectedItem(null)}
               className="absolute top-4 right-4 bg-white rounded-full p-2 shadow-md hover:bg-gray-100 z-10"
@@ -79,6 +121,7 @@ export default function Menu({ addToCart }) {
               ✕
             </button>
 
+            {/* Left Side: Image */}
             <div className="w-full md:w-1/2 h-64 md:h-auto">
               <img 
                 src={`${brandConfig.imageFolder}/${selectedItem.image}`} 
@@ -87,6 +130,7 @@ export default function Menu({ addToCart }) {
               />
             </div>
 
+            {/* Right Side: Details */}
             <div className="w-full md:w-1/2 p-8 flex flex-col justify-between">
               <div>
                 <h2 className="text-3xl font-bold text-gray-800 mb-2">{selectedItem.name}</h2>
@@ -98,8 +142,9 @@ export default function Menu({ addToCart }) {
                   {selectedItem.longDescription}
                 </p>
 
+                {/* Dynamic Label: Ingredients for Food, Specifications for Groceries */}
                 <h4 className="font-bold text-gray-800 mb-2">
-                  {brandConfig.name === "Yummys" ? "Ingredients:" : "Specifications:"}
+                  {brandConfig.name === "Yummys" ? "Ingredients:" : "Details:"}
                 </h4>
                 <div className="flex flex-wrap gap-2 mb-8">
                   {selectedItem.ingredients?.map((ing, index) => (
@@ -114,13 +159,14 @@ export default function Menu({ addToCart }) {
                 </div>
               </div>
 
+              {/* Add to Order Button inside Modal */}
               <button 
                 onClick={() => {
                   addToCart(selectedItem);
-                  setSelectedItem(null);
+                  setSelectedItem(null); // Close modal after adding
                 }}
                 style={{ backgroundColor: brandConfig.primaryColor }}
-                className="w-full text-white py-3 rounded-xl font-bold filter hover:brightness-90 transition shadow-lg"
+                className="w-full text-white py-4 rounded-xl font-bold filter hover:brightness-90 transition shadow-lg"
               >
                 Add to Order - ₦{selectedItem.price?.toLocaleString()}
               </button>

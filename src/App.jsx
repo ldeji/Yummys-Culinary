@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { BrowserRouter, Routes, Route, Link } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Link, } from 'react-router-dom'
+import Navbar from './components/Navbar'; // Import your new Navbar
 import Home from './pages/Home'
 import Menu from './pages/Menu'
 import About from './pages/About'
@@ -66,6 +67,19 @@ function App() {
   const [selectedItem, setSelectedItem] = useState(null) //
    const upsell = brandConfig?.items || []; //
 
+   const [searchTerm, setSearchTerm] = useState("");
+
+const handleSearch = (e) => {
+  e.preventDefault(); // Stop page refresh
+  if (searchTerm.trim()) {
+    // This changes the URL to /menu?search=chips
+    navigate(`/menu?search=${encodeURIComponent(searchTerm.trim())}`);
+  } else {
+    // If empty, just go to the full menu
+    navigate('/menu');
+  }
+};
+
   // --- RETURN ---
   return (
     <BrowserRouter>
@@ -73,109 +87,8 @@ function App() {
         
         {/* Scroll To Top  */}
        <ScrollToTop />
-      {/* --- NAVBAR --- */}
-<nav 
-style={{ backgroundColor: brandConfig.accentColor }}
-className="bg-white shadow-md sticky top-0 z-50">
-    
-  <div className="max-w-6xl mx-auto px-4 py-5">
-    
-    <div className="flex justify-between items-center">     
-      {/* 1. Logo & Brand Name */}
-      <div className="flex items-center gap-2">
-        <div>
-          <img 
-            src={brandConfig.logo} 
-            alt="Logo" 
-            className="h-8 w-8 md:w-10 md:h-10 rounded-full object-cover" 
-          />
-        </div>
-        
-        {/* Dynamic Brand Name and Primary Color */}
-        <Link 
-          to="/" 
-          style={{ color: brandConfig.primaryColor }}
-          className="text-sm md:text-3xl font-bold tracking-tight"
-        >
-          {brandConfig.name}
-        </Link>
-      </div>
 
-      {/* 2. Desktop Menu */}
-      <ul 
-      style={{ color: brandConfig.primaryColor }}
-      className="hidden md:flex gap-8 font-medium">
-        <Link to="/" className="hover:opacity-70 transition duration-300">Home</Link>
-        
-        {/* Logic: Change "Menu" to "Shop" if it's the Pantry brand */}
-        <Link to="/menu" className="hover:opacity-70 transition duration-300">
-      {/* TWO WORDS OPTIONS  */}
-          {brandConfig.name === "Yummys" ? "Menu" : "Shop"}
-        </Link>
-        
-        <Link to="/about" className="hover:opacity-70 transition duration-300">About</Link>
-      </ul>
-
-      {/* 3. Right Side Icons (Cart + Hamburger) */}
-      <div className="flex items-center gap-4">
-        
-        {/* Dynamic Cart Button Color */}
-        <button 
-          onClick={() => setIsCartOpen(true)} 
-          style={{ backgroundColor: brandConfig.primaryColor }}
-          className="relative text-white px-4 py-2 rounded-full font-bold filter hover:brightness-90 transition"
-        >
-          🛒 <span className="hidden sm:inline">Cart</span>
-          {cartCount > 0 && (
-            <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs w-6 h-6 flex items-center justify-center rounded-full border-2 border-white">
-              {cartCount}
-            </span>
-          )}
-        </button>
-
-        {/* 4. Hamburger Button (Mobile Only) */}
-        <button 
-          onClick={() => setIsMenuOpen(!isMenuOpen)} 
-          className="md:hidden text-2xl text-gray-700 focus:outline-none"
-        >
-          {isMenuOpen ? "✕" : "☰"}
-        </button>
-
-      </div>
-    </div>
-
-    {/* 5. Mobile Menu Dropdown */}
-    {isMenuOpen && (
-      <div className="md:hidden mt-4 pb-4 border-t pt-4 space-y-4 flex flex-col bg-white">
-        <Link 
-          to="/" 
-          className="text-gray-700 font-medium block"
-          style={{ borderLeft: `4px solid ${brandConfig.primaryColor}`, paddingLeft: '8px' }}
-          onClick={() => setIsMenuOpen(false)}
-        >
-          Home
-        </Link>
-        <Link 
-          to="/menu" 
-          className="text-gray-700 font-medium block"
-          style={{ borderLeft: `4px solid ${brandConfig.primaryColor}`, paddingLeft: '8px' }}
-          onClick={() => setIsMenuOpen(false)}
-        >
-          {brandConfig.name === "Yummys" ? "Menu" : "Shop"}
-        </Link>
-        <Link 
-          to="/about" 
-          className="text-gray-700 font-medium block"
-          style={{ borderLeft: `4px solid ${brandConfig.primaryColor}`, paddingLeft: '8px' }}
-          onClick={() => setIsMenuOpen(false)}
-        >
-          About
-        </Link>
-      </div>
-    )}
-
-  </div>
-</nav>
+       <Navbar cartCount={cart.length} setIsCartOpen={setIsCartOpen} />
 
         {/* --- ROUTES --- */}
         <Routes>

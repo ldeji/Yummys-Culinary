@@ -116,4 +116,3 @@ export const yummysUpsells = [
   // ... rest of your yummys upsells
 ];
 
-export const yummysAbout = { image: "cheffo.jpeg" };

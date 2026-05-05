@@ -2,41 +2,23 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { brandConfig } from '../config/brands';
 
-// 1. The list of images to rotate
-const heroImages = [
-  {
-    id: 1,
-    img: brandConfig.name === "Yummys" ? "images/yummys/Amala.jpg" : "images/pantry/NesquikChocolate.webp",
-    color: "bg-yellow-300" // Background blob color
-  },
-  {
-    id: 1,
-    img: brandConfig.name === "Yummys" ? "images/yummys/Abacha.jpg" : "images/pantry/PancakeMix.webp", // Bbq
-    color: "bg-yellow-300" // Background blob color
-  },
-  {
-    id: 2,
-    img: brandConfig.name === "Yummys" ? "https://images.unsplash.com/photo-1604382354936-07c5d9983bd3?w=600" : "images/pantry/BarillaPasta.webp", // Pizza
-    color: "bg-yellow-100"
-  },
-  {
-    id: 3,
-    img: brandConfig.name === "Yummys" ? "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600" : "images/pantry/QuakerQuickOne-MinuteOats.webp", // Salad/Bowl
-    color: "bg-yellow-300"
-  },
-]
 
 export default function Home() {
   const [currentIndex, setCurrentIndex] = useState(0)
 
+  // Use the list from our brand config (with a fallback to an empty array)
+  const heroImages = brandConfig?.heroImages || [];
+
   // 2. The Logic: Change image every 3 seconds
   useEffect(() => {
-    const interval = setInterval(() => {
+     if (heroImages.length === 0) return; // Don't start interval if no images
+    
+     const interval = setInterval(() => {
       setCurrentIndex((prevIndex) => (prevIndex + 1) % heroImages.length)
     }, 3000) // 3000ms = 3 seconds
 
     return () => clearInterval(interval) // Cleanup on unmount
-  }, [])
+  }, [heroImages.length]) // Re-run if the number of images changes
 
   return (
     <div 
@@ -82,21 +64,30 @@ export default function Home() {
         </div>
 
         {/* --- RIGHT SIDE: ANIMATION --- */}
-        <div className="relative h-100 w-full flex items-center justify-center">
+        <div className="relative h-112 w-full flex items-center justify-center md:w-1/2">
           
-          {/* The Blob Background (Changes color) */}
-          <div 
-            className={`absolute w-87.5 h-87.5 md:w-112.5 md:h-112.5 rounded-full blur-2xl opacity-50 transition-colors duration-1000 ${heroImages[currentIndex].color}`}
-          ></div>
+          {/* 1. The Blob Background (Perfectly Round) */}
+          {heroImages.length > 0 && (
+            <div 
+              style={{ backgroundColor: heroImages[currentIndex].blob }}
+              className="absolute w-72 h-72 md:w-96 md:h-96 aspect-square rounded-full blur-3xl opacity-40 transition-colors duration-1000"
+            ></div>
+          )}
 
-          {/* The Rotating Images */}
-          <div className="relative w-75 h-75 md:w-100 md:h-100">
+          {/* 2. The Rotating Images Container */}
+          {/*lock the size and use aspect-square to force a 1:1 circle ratio */}
+          <div className="relative w-64 h-64 md:w-96 md:h-96 aspect-square">
             {heroImages.map((item, index) => (
               <img 
                 key={item.id}
                 src={item.img} 
-                alt="Food"
-                className={`absolute inset-0 w-full h-full object-cover rounded-full shadow-2xl transition-all duration-1000 ease-in-out transform contrast-130
+                alt={`${brandConfig.name} Slide ${index}`}
+                /* 
+                  Fixes: 
+                  - rounded-full + aspect-square = Perfect Circle
+                  - object-cover = Content doesn't stretch 
+                */
+                className={`absolute inset-0 w-full h-full aspect-square object-cover rounded-full shadow-2xl transition-all duration-1000 ease-in-out transform contrast-125
                   ${index === currentIndex 
                     ? "opacity-100 scale-100 rotate-0" 
                     : "opacity-0 scale-90 rotate-12"
@@ -104,7 +95,6 @@ export default function Home() {
                 `}
               />
             ))}
-            
           </div>
 
         </div>
