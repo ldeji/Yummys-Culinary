@@ -1,28 +1,28 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom' // Added useNavigate
 import { brandConfig } from '../config/brands';
-
 
 export default function Home() {
   const [currentIndex, setCurrentIndex] = useState(0)
+  const navigate = useNavigate(); // Initialize navigation
 
   // Use the list from our brand config (with a fallback to an empty array)
   const heroImages = brandConfig?.heroImages || [];
 
   // 2. The Logic: Change image every 3 seconds
   useEffect(() => {
-     if (heroImages.length === 0) return; // Don't start interval if no images
+     if (heroImages.length === 0) return; 
     
      const interval = setInterval(() => {
       setCurrentIndex((prevIndex) => (prevIndex + 1) % heroImages.length)
-    }, 3000) // 3000ms = 3 seconds
+    }, 3000) 
 
-    return () => clearInterval(interval) // Cleanup on unmount
-  }, [heroImages.length]) // Re-run if the number of images changes
+    return () => clearInterval(interval) 
+  }, [heroImages.length]) 
 
   return (
     <div 
-    style={{ backgroundColor:brandConfig.backColor }}
+    style={{ backgroundColor: brandConfig.backColor }}
     className="min-h-[85vh] flex items-center justify-center px-4 overflow-hidden">
       
       {/* CONTAINER: Flex Column on Mobile, Row on Desktop */}
@@ -38,8 +38,8 @@ export default function Home() {
           
           <h1 
           style={{ color: brandConfig.accentColor }}
-          className="text-5xl md:text-7xl font-extrabold leading-tight mb-6">
-            {brandConfig.name === "Yummys" ? "Hungry?" : "Need Pantry?"} <br />
+          className="text-4xl md:text-7xl font-extrabold leading-tight mb-6">
+            {brandConfig.name === "Yummys" ? "Hungry?" : "Need Pantry Items?"} <br />
             
             <span 
             style={{ color: brandConfig.lightColor }}
@@ -56,50 +56,65 @@ export default function Home() {
             <Link to="/menu">
               <button 
               style={{ backgroundColor: brandConfig.primaryColor }} 
-              className=" px-8 py-4 rounded-full text-lg font-bold transition-all duration-300 shadow-xl hover:scale-95 hover:brightness-130">
+              className=" px-8 py-4 rounded-full text-lg font-bold transition-all duration-300 shadow-xl hover:scale-95 hover:brightness-110 text-white">
                 Order Now <span className="text-3xl">{brandConfig.name === "Yummys" ? "🍴" : "🌾"}</span>
               </button>
             </Link>
           </div>
         </div>
 
+        
         {/* --- RIGHT SIDE: ANIMATION --- */}
-        <div className="relative h-112 w-full flex items-center justify-center md:w-1/2">
-          
-          {/* 1. The Blob Background (Perfectly Round) */}
-          {heroImages.length > 0 && (
-            <div 
-              style={{ backgroundColor: heroImages[currentIndex].blob }}
-              className="absolute w-72 h-72 md:w-96 md:h-96 aspect-square rounded-full blur-3xl opacity-40 transition-colors duration-1000"
-            ></div>
-          )}
+  <div className="relative h-112 w-full flex items-center justify-center [perspective:1000px]">
+    
+    {/* 1. The Blob Background */}
+    {heroImages.length > 0 && (
+      <div 
+        style={{ backgroundColor: heroImages[currentIndex].blob }}
+        className="absolute w-72 h-72 md:w-96 md:h-96 aspect-square rounded-full blur-3xl opacity-40 transition-colors duration-1000"
+      ></div>
+    )}
 
-          {/* 2. The Rotating Images Container */}
-          {/*lock the size and use aspect-square to force a 1:1 circle ratio */}
-          <div className="relative w-64 h-64 md:w-96 md:h-96 aspect-square">
-            {heroImages.map((item, index) => (
-              <img 
-                key={item.id}
-                src={item.img} 
-                alt={`${brandConfig.name} Slide ${index}`}
-                /* 
-                  Fixes: 
-                  - rounded-full + aspect-square = Perfect Circle
-                  - object-cover = Content doesn't stretch 
-                */
-                className={`absolute inset-0 w-full h-full aspect-square object-cover rounded-full shadow-2xl transition-all duration-1000 ease-in-out transform contrast-125
-                  ${index === currentIndex 
-                    ? "opacity-100 scale-100 rotate-0" 
-                    : "opacity-0 scale-90 rotate-12"
-                  }
-                `}
-              />
-            ))}
-          </div>
-
+    {/* 2. The Flip Container */}
+    <div 
+      onClick={() => navigate('/menu')}
+      className="relative w-72 h-72 md:w-96 md:h-96 aspect-square cursor-pointer group [transform-style:preserve-3d]"
+    >
+      {heroImages.map((item, index) => (
+        <div
+          key={item.id}
+          /* 
+            COIN FLIP LOGIC:
+            - [transform:rotateY(180deg)]: Flips the image on its Y-axis
+            - backface-hidden: Ensures the "back" of the image isn't visible when flipped
+          */
+          className={`absolute inset-0 w-full h-full rounded-full bg-white shadow-2xl overflow-hidden backface-hidden transition-all duration-1000 ease-in-out
+            ${index === currentIndex 
+              ? "opacity-100 [transform:rotateY(0deg)] z-10" 
+              : "opacity-0 [transform:rotateY(180deg)] z-0"
+            }
+          `}
+        >
+          <img 
+            src={item.img} 
+            alt="Product"
+            className="w-full h-full object-contain p-10 md:p-14 transition-transform duration-500 group-hover:scale-110 contrast-125"
+          />
         </div>
-
+      ))}
+      
+      {/* Hover Badge */}
+      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20 pointer-events-none">
+        <span 
+          style={{ backgroundColor: brandConfig.primaryColor }}
+          className="text-white text-xs font-bold px-4 py-2 rounded-full shadow-lg"
+        >
+          View {brandConfig.name === "Yummys" ? "Menu" : "Shop"} →
+        </span>
       </div>
     </div>
-  )
+  </div>
+ </div>
+</div>
+)
 }

@@ -66,49 +66,70 @@ export default function Menu({ addToCart }) {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {filteredItems.map((item) => (
-            <div key={item.id} className="bg-white rounded-xl shadow-lg overflow-hidden hover:scale-102 transition duration-300 flex flex-col">
-              
-              {/* Clicking this area opens the Product Detail Modal */}
-              <div onClick={() => setSelectedItem(item)} className="cursor-pointer flex-grow">
-                <img 
-                  src={`${brandConfig.imageFolder}/${item.image}`} 
-                  alt={item.name} 
-                  className="w-full h-72 object-cover transition duration-300 hover:contrast-120" 
-                />
-                
-                <div className="p-5 pb-0">
-                  <div className="flex justify-between items-center mb-2">
-                    <h3 className="font-bold text-lg">{item.name}</h3>
-                    <span style={{ color: brandConfig.accentColor }} className="font-bold">
-                      ₦{item.price?.toLocaleString()}
-                    </span>
-                  </div>
-                  <p className="text-gray-500 text-sm mb-4 line-clamp-2">{item.description}</p>
-                  <p style={{ color: brandConfig.primaryColor }} className="text-xs font-bold mb-4 hover:underline">
-                    View Details →
-                  </p>
-                </div>
-              </div>
+           <div key={item.id} className="bg-white rounded-xl shadow-lg overflow-hidden hover:scale-102 transition duration-300 flex flex-col border border-gray-100">
+  
+  {/* TOP PART: Clickable area for Modal */}
+  <div onClick={() => setSelectedItem(item)} className="cursor-pointer">
+    
+    {/* 1. Image Container - Made smaller (h-48) and centered */}
+    <div className="w-full h-40 md:h-48 bg-gray-50 flex items-center justify-center p-6">
+      <img 
+        src={`${brandConfig.imageFolder}/${item.image}`} 
+        alt={item.name} 
+        /* object-contain ensures 100% visibility, h-full keeps it within bounds */
+        className="h-full w-auto object-contain transition duration-300 hover:scale-110"  
+      />
+    </div>
 
-              {/* Add to Cart Button (Fixed at bottom) */}
-              <div className="p-5 pt-0">
-                <button 
-                  onClick={(e) => {
-                    e.stopPropagation(); // Prevents opening the modal when clicking the button
-                    addToCart(item);
-                  }}
-                  style={{ backgroundColor: brandConfig.primaryColor }}
-                  className="w-full text-white py-2 rounded-lg font-bold filter hover:brightness-90 active:scale-95 transition"
-                >
-                  Add to Cart
-                </button>
-              </div>
-            </div>
+    {/* 2. Content Container - Tightened spacing */}
+    <div className="p-4">
+      {/* Name and Price Row */}
+      <div className="flex justify-between items-start mb-1">
+        <h3 className="font-bold text-base md:text-lg text-gray-800 leading-tight">
+          {item.name}
+        </h3>
+        <span 
+          style={{ color: brandConfig.primaryColor }} 
+          className="font-bold text-sm md:text-base whitespace-nowrap ml-2"
+        >
+          ₦{item.price?.toLocaleString()}
+        </span>
+      </div>
+
+      {/* Description - Smaller text to save space */}
+      <p className="text-gray-500 text-xs md:text-sm line-clamp-2 mb-2 leading-snug">
+        {item.description}
+      </p>
+
+      {/* View Details Link */}
+      <p 
+        style={{ color: brandConfig.primaryColor }} 
+        className="text-[10px] md:text-xs font-bold uppercase tracking-wider hover:underline"
+      >
+        View Details →
+      </p>
+    </div>
+  </div>
+
+  {/* BOTTOM PART: Add to Cart Button */}
+  <div className="p-4 pt-0 mt-auto">
+    <button 
+      onClick={(e) => {
+        e.stopPropagation(); 
+        addToCart(item);
+      }}
+      style={{ backgroundColor: brandConfig.primaryColor }}
+      className="w-full text-white py-2 rounded-lg font-bold text-sm filter hover:brightness-90 active:scale-95 transition shadow-sm"
+    >
+      Add to Cart
+    </button>
+  </div>
+</div>
           ))}
         </div>
       )}
 
-      {/* --- PRODUCT DETAIL MODAL (RESTORED) --- */}
+      {/* --- MODAL MORE DETAILS OF THE PRODUCT --- */}
       {selectedItem && (
         <div className="fixed inset-0 bg-black bg-opacity-60 z-[100] flex items-center justify-center p-4 overflow-y-auto">
           <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full overflow-hidden flex flex-col md:flex-row animate-scale-in relative">
@@ -126,7 +147,7 @@ export default function Menu({ addToCart }) {
               <img 
                 src={`${brandConfig.imageFolder}/${selectedItem.image}`} 
                 alt={selectedItem.name} 
-                className="w-full h-full object-cover" 
+                className="w-full h-full object-cover hover:contrast-125 transition-transform duration-300" 
               />
             </div>
 
