@@ -137,7 +137,7 @@ export default function Menu({ addToCart }) {
             {/* Close Modal Button */}
             <button 
               onClick={() => setSelectedItem(null)}
-              className="absolute top-4 right-4 bg-white rounded-full p-2 shadow-md hover:bg-gray-100 z-10"
+              className="absolute top-4 right-4 bg-white rounded-full p-2 shadow-md hover:bg-gray-300 z-10"
             >
               ✕
             </button>

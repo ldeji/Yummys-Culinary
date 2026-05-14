@@ -12,6 +12,8 @@ const brands = {
     items: yummysItems, // Attach the restaurant data
     upsells: yummysUpsells, // Attach the upsell data
     aboutImage: "/images/yummys/cheffo.jpeg",
+    paystackKey: "pk_test_f5cf2aa44a08c1cf4af8e848b3967cce5285c637", // Add your key here
+    currency: "NGN",
     primaryColor: "#EAB308", // yellow-500
     lightColor: "#EAB308",   // yellow-500
     accentColor: "#E5E7EB",  // gray-200
@@ -36,6 +38,8 @@ const brands = {
     lightColor: "#d40785",   // fushia
     accentColor: "#c5a47f",  // peach
     backColor: "#24150f", // dark-brown
+    paystackKey: "pk_test_f5cf2aa44a08c1cf4af8e848b3967cce5285c637", // Add your key here
+    currency: "NGN",
      heroImages: [
       { id: 1, img: "/images/pantry/NesquikChocolate.webp", blob: "#86EFAC" }, // green-300
       { id: 2, img: "/images/pantry/PancakeMix.webp", blob: "#86EFAC" },

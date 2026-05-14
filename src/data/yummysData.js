@@ -110,7 +110,7 @@ export const yummysItems = [
 ];
 
 export const yummysUpsells = [
-  { id: 101, name: "Chocolate Shake", price: 2500, image: "choc-shake.jpg" },
+  { id: 101, name: "Chocolate Shake", price: 2500, image: "ChocolateShakeD.webp" },
   { id: 102, name: "Naija Fizz", price: 1200, image: "NaijaFizz.png" },
   { id: 103, name: "CocaCola", price: 500, image: "CocaCola.jpg" },
   // ... rest of your yummys upsells

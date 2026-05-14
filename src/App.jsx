@@ -48,18 +48,70 @@ function App() {
     setCart((prevCart) => prevCart.filter((item) => item.id !== id))
   }
 
-  const handleCheckout = () => {
-    if (cart.length === 0) {
-      alert("Your cart is empty! Add some yumminess first.")
-      return
-    }
-    const confirmOrder = window.confirm(`Ready to pay #${cartTotal}?`)
-    if (confirmOrder) {
-      alert("Order Placed Successfully!")
-      setCart([])
-      setIsCartOpen(false)
-    }
+
+  // 1. Create the Paystack Function (Place this inside your component, before return)
+const payWithPaystack = (amount) => {
+   // DEBUGGING: Check if the key is being read correctly
+  console.log("Using Paystack Key:", brandConfig.paystackKey); 
+  console.log("Active Brand:", brandConfig.name);
+
+  if (!brandConfig.paystackKey) {
+    alert("Error: Paystack Public Key is missing in brands.js!");
+    return;
   }
+  // We need an email. For now, we use a prompt. 
+  // (Later, when we have the database, this will come from the logged-in user)
+  const customerEmail = window.prompt("Please enter your email address to complete payment:");
+
+  if (!customerEmail) {
+    alert("Email is required for payment!");
+    return;
+  }
+
+  const handler = window.PaystackPop.setup({
+    key: brandConfig.paystackKey, // Dynamic key based on Yummys or Pantry
+    email: customerEmail,
+    amount: amount * 100, // Amount in Kobo (Naira x 100)
+    currency: "NGN",
+    metadata: {
+      custom_fields: [
+        {
+          display_name: "Brand Name",
+          variable_name: "brand_name",
+          value: brandConfig.name
+        }
+      ]
+    },
+    callback: function(response) {
+      // THIS RUNS IF PAYMENT IS SUCCESSFUL
+      alert("Payment Successful! Reference: " + response.reference);
+      
+      setCart([]);         // Clear the cart
+      setIsCartOpen(false); // Close the cart sidebar
+      
+      // LOGIC FOR DATABASE: 
+      // This is where you will later "save" the order to Supabase
+    },
+    onClose: function() {
+      alert("Payment cancelled. Your items are still in the cart.");
+    }
+  });
+
+  handler.openIframe();
+};
+
+// 2. Create the Checkout Handler (This will call the Paystack function)
+const handleCheckout = () => {
+  if (cart.length === 0) {
+    alert(`Your ${brandConfig.name} cart is empty!`);
+    return;
+  }
+  
+  // Trigger the Paystack flow
+  payWithPaystack(cartTotal);
+}
+
+
 
   //  for the mobile menu
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -260,14 +312,14 @@ const handleSearch = (e) => {
               onClick={() => setIsCartOpen(false)}
               className="mt-4 text-orange-600 font-bold underline"
             >
-              Go to Menu
+             {brandConfig.name === "Yummys" ? "Go to Menu" : "Go to Shop"} 
             </button>
           </div>
         ) : (
           cart.map((item) => (
             <div key={item.id} className="flex justify-between items-center bg-white p-3 rounded-lg shadow-sm">
               <div className="flex items-center gap-3">
-                <img src={item.image} alt={item.name} className="w-16 h-16 rounded-md object-cover" />
+                <img src={`${brandConfig.imageFolder}/${item.image}`} alt={item.name} className="w-16 h-16 rounded-md object-cover" />
                 <div>
                   <h4 className="font-bold text-gray-800">{item.name}</h4>
                   <div className="flex items-center gap-2 mt-1">
