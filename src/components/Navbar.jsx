@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { brandConfig } from '../config/brands';
-import { supabase } from '../config/supabaseClient'; // <--- THIS WAS MISSING
+import { supabase } from '../config/supabaseClient';
+import { CiSearch } from "react-icons/ci";
+
 
 export default function Navbar({ cartCount, setIsCartOpen, user }) {
   const [searchTerm, setSearchTerm] = useState("");
@@ -63,8 +65,8 @@ export default function Navbar({ cartCount, setIsCartOpen, user }) {
               className="w-full border-2 rounded-full py-1.5 px-4 pr-10 focus:outline-none"
               style={{ borderColor: brandConfig.primaryColor }}
             />
-            <button type="submit" className="absolute right-3 top-1/2 -translate-y-1/2 text-lg">
-              🔍
+            <button type="submit" className="absolute right-3 top-1/2 -translate-y-1/2 text-lg hover:opacity-70 transition">
+              <CiSearch />
             </button>
           </form>
 
@@ -141,7 +143,9 @@ export default function Navbar({ cartCount, setIsCartOpen, user }) {
                 className="w-full border-2 rounded-lg py-2 px-4 focus:outline-none"
                 style={{ borderColor: brandConfig.primaryColor }}
               />
-              <button type="submit" className="absolute right-3 top-2.5">🔍</button>
+              <button type="submit" className="absolute right-3 top-2.5 hover:opacity-70 transition hover: scale-115">
+                <CiSearch />
+              </button>
             </form>
 
             <Link to="/" className="text-gray-700 font-medium block p-2 rounded-md" style={{ backgroundColor: brandConfig.lightColor }} onClick={() => setIsMenuOpen(false)}>🏠 Home</Link>
