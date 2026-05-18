@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { brandConfig } from '../config/brands';
+import { supabase } from '../config/supabaseClient'; // <--- THIS WAS MISSING
 
-export default function Navbar({ cartCount, setIsCartOpen }) {
+export default function Navbar({ cartCount, setIsCartOpen, user }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const navigate = useNavigate();
@@ -10,10 +11,22 @@ export default function Navbar({ cartCount, setIsCartOpen }) {
   const handleSearch = (e) => {
     e.preventDefault();
     if (searchTerm.trim()) {
-      // Navigates to menu and adds the search term to the URL
       navigate(`/menu?search=${encodeURIComponent(searchTerm.trim())}`);
-      setIsMenuOpen(false); // Close mobile menu if open
-      setSearchTerm("");    // Clear input
+      setIsMenuOpen(false);
+      setSearchTerm("");
+    }
+  };
+
+  // Correct Logout Function
+  const handleLogout = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      
+      // Successfully logged out - Refresh and go home
+      window.location.href = "/"; 
+    } catch (error) {
+      alert("Error logging out: " + error.message);
     }
   };
 
@@ -66,6 +79,30 @@ export default function Navbar({ cartCount, setIsCartOpen }) {
             </ul>
 
             <div className="flex items-center gap-3">
+               {/* 4. AUTH SECTION (Orders + Logout/Login) */}
+               {user && (
+                  <Link to="/orders" className="text-sm font-bold text-gray-600 hover:opacity-70">
+                    My Orders
+                  </Link>
+                )}
+
+               {user ? (
+                <button 
+                  onClick={handleLogout}
+                  className="text-gray-600 text-sm font-bold hover:text-red-500 transition-colors"
+                >
+                  Logout
+                </button>
+              ) : (
+                <Link 
+                  to="/login" 
+                  style={{ color: brandConfig.primaryColor }}
+                  className="font-bold text-sm"
+                >
+                  Login
+                </Link>
+              )}
+
               {/* Cart Button */}
               <button 
                 onClick={() => setIsCartOpen(true)} 
@@ -81,7 +118,7 @@ export default function Navbar({ cartCount, setIsCartOpen }) {
                 )}
               </button>
 
-              {/* Hamburger Button */}
+              {/* Hamburger Button (Mobile) */}
               <button 
                 onClick={() => setIsMenuOpen(!isMenuOpen)} 
                 className="md:hidden text-2xl text-gray-700 focus:outline-none"
@@ -92,7 +129,7 @@ export default function Navbar({ cartCount, setIsCartOpen }) {
           </div>
         </div>
 
-        {/* 4. Mobile Menu Dropdown */}
+        {/* 5. Mobile Menu Dropdown */}
         {isMenuOpen && (
           <div className="md:hidden mt-4 pb-4 border-t pt-4 space-y-4">
             <form onSubmit={handleSearch} className="relative mb-4">
@@ -107,30 +144,19 @@ export default function Navbar({ cartCount, setIsCartOpen }) {
               <button type="submit" className="absolute right-3 top-2.5">🔍</button>
             </form>
 
-            <Link 
-              to="/" 
-              className="text-gray-700 font-medium block p-2 rounded-md"
-              style={{ backgroundColor: brandConfig.lightColor }}
-              onClick={() => setIsMenuOpen(false)}
-            >
-              🏠 Home
-            </Link>
-            <Link 
-              to="/menu" 
-              className="text-gray-700 font-medium block p-2 rounded-md"
-              style={{ backgroundColor: brandConfig.lightColor }}
-              onClick={() => setIsMenuOpen(false)}
-            >
-              🍴 {brandConfig.name === "Yummys" ? "Menu" : "Shop"}
-            </Link>
-            <Link 
-              to="/about" 
-              className="text-gray-700 font-medium block p-2 rounded-md"
-              style={{ backgroundColor: brandConfig.lightColor }}
-              onClick={() => setIsMenuOpen(false)}
-            >
-              ℹ️ About
-            </Link>
+            <Link to="/" className="text-gray-700 font-medium block p-2 rounded-md" style={{ backgroundColor: brandConfig.lightColor }} onClick={() => setIsMenuOpen(false)}>🏠 Home</Link>
+            <Link to="/menu" className="text-gray-700 font-medium block p-2 rounded-md" style={{ backgroundColor: brandConfig.lightColor }} onClick={() => setIsMenuOpen(false)}>🍴 {brandConfig.name === "Yummys" ? "Menu" : "Shop"}</Link>
+            <Link to="/about" className="text-gray-700 font-medium block p-2 rounded-md" style={{ backgroundColor: brandConfig.lightColor }} onClick={() => setIsMenuOpen(false)}>ℹ️ About</Link>
+            
+            {/* Added Orders & Logout to Mobile Menu */}
+            {user ? (
+              <>
+                <Link to="/orders" className="text-gray-700 font-medium block p-2 rounded-md bg-gray-100" onClick={() => setIsMenuOpen(false)}>📋 My Orders</Link>
+                <button onClick={handleLogout} className="w-full text-left text-red-500 font-medium block p-2">🚪 Logout</button>
+              </>
+            ) : (
+              <Link to="/login" className="text-gray-700 font-medium block p-2 rounded-md bg-gray-100" onClick={() => setIsMenuOpen(false)}>🔑 Login</Link>
+            )}
           </div>
         )}
       </div>

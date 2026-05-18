@@ -1,23 +1,36 @@
-import { useState } from 'react'
-import { BrowserRouter, Routes, Route, Link, } from 'react-router-dom'
-import Navbar from './components/Navbar'; // Import your new Navbar
+import { useEffect, useState } from 'react'
+import { BrowserRouter, Routes, Route, Link } from 'react-router-dom'
+import Navbar from './components/Navbar'; 
 import Home from './pages/Home'
 import Menu from './pages/Menu'
 import About from './pages/About'
 import { brandConfig } from "./config/brands";
 import ScrollToTop from "./components/ScrollToTop";
+import Auth from './pages/Auth';
+import { supabase } from './config/supabaseClient';
+import Orders from './pages/Orders';
+import { FaWhatsapp, FaEnvelope, FaMapMarkerAlt, FaPaperPlane } from 'react-icons/fa'; // Import the icons
 
 
 function App() {
-  // --- STATE ---
+  const [user, setUser] = useState(null);
   const [cart, setCart] = useState([]) 
   const [isCartOpen, setIsCartOpen] = useState(false)
 
-  //  DERIVED STATE
-  const cartCount = cart.length
+  // --- AUTH LOGIC ---
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // --- CART CALCULATIONS ---
   const cartTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0)
 
-  // LOGIC FUNCTIONS
   const addToCart = (product) => {
     setCart((prevCart) => {
       const existingItem = prevCart.find((item) => item.id === product.id)
@@ -29,336 +42,337 @@ function App() {
         return [...prevCart, { ...product, quantity: 1 }]
       }
     })
-    // Optional: Auto-open cart when adding
-    // setIsCartOpen(true) 
   }
 
   const updateQuantity = (id, amount) => {
-    setCart((prevCart) => {
-      return prevCart.map((item) => {
-        if (item.id === id) {
-          return { ...item, quantity: item.quantity + amount }
-        }
-        return item
-      }).filter((item) => item.quantity > 0)
-    })
+    setCart((prevCart) => prevCart.map((item) => 
+      item.id === id ? { ...item, quantity: item.quantity + amount } : item
+    ).filter((item) => item.quantity > 0))
   }
 
   const removeFromCart = (id) => {
     setCart((prevCart) => prevCart.filter((item) => item.id !== id))
   }
 
+  // --- PAYSTACK & CHECKOUT ---
+  // 1. Create a separate function to handle the database part
+const saveOrderToDatabase = async (response, amount) => {
+  console.log("Saving order... Checking for reference:", response.reference);
+  
+  // Create the object exactly
+  const newOrder = {
+    user_id: user.id,
+    items: cart,
+    total_amount: amount,
+    brand_id: import.meta.env.VITE_BRAND || 'yummys',
+    payment_reference: response.reference, // Check this matches Step 2
+    status: "paid"
+  };
 
-  // 1. Create the Paystack Function (Place this inside your component, before return)
-const payWithPaystack = (amount) => {
-   // DEBUGGING: Check if the key is being read correctly
-  console.log("Using Paystack Key:", brandConfig.paystackKey); 
-  console.log("Active Brand:", brandConfig.name);
+  const { data, error } = await supabase
+    .from('orders')
+    .insert([newOrder]);
 
-  if (!brandConfig.paystackKey) {
-    alert("Error: Paystack Public Key is missing in brands.js!");
+  if (error) {
+    console.error("FULL ERROR OBJECT:", error);
+    
+    // If it still fails, let's try a fallback column name just in case
+    if (error.message.includes("payment_reference")) {
+       alert("Database Error: The column 'payment_reference' isn't recognized. Please check Step 2 again!");
+    } else {
+       alert("Error: " + error.message);
+    }
+  } else {
+    alert("Order Placed Successfully!");
+    setCart([]);
+    setIsCartOpen(false);
+  }
+};
+
+// 2. The Updated handleCheckout (Pure Function for Paystack)
+const handleCheckout = () => {
+  if (cart.length === 0) return alert("Cart is empty!");
+  
+  if (!user) {
+    alert("Please login to place an order.");
+    window.location.href = "/login";
     return;
   }
-  // We need an email. For now, we use a prompt. 
-  // (Later, when we have the database, this will come from the logged-in user)
-  const customerEmail = window.prompt("Please enter your email address to complete payment:");
 
-  if (!customerEmail) {
-    alert("Email is required for payment!");
+  if (!window.PaystackPop) {
+    alert("Payment system is loading... please refresh.");
     return;
   }
 
+  // We use a regular function here (no 'async' keyword)
   const handler = window.PaystackPop.setup({
-    key: brandConfig.paystackKey, // Dynamic key based on Yummys or Pantry
-    email: customerEmail,
-    amount: amount * 100, // Amount in Kobo (Naira x 100)
+    key: brandConfig.paystackKey,
+    email: user.email,
+    amount: Math.round(cartTotal * 100),
     currency: "NGN",
-    metadata: {
-      custom_fields: [
-        {
-          display_name: "Brand Name",
-          variable_name: "brand_name",
-          value: brandConfig.name
-        }
-      ]
-    },
     callback: function(response) {
-      // THIS RUNS IF PAYMENT IS SUCCESSFUL
-      alert("Payment Successful! Reference: " + response.reference);
-      
-      setCart([]);         // Clear the cart
-      setIsCartOpen(false); // Close the cart sidebar
-      
-      // LOGIC FOR DATABASE: 
-      // This is where you will later "save" the order to Supabase
+      // We call our async database function from here
+      saveOrderToDatabase(response, cartTotal);
     },
     onClose: function() {
-      alert("Payment cancelled. Your items are still in the cart.");
+      console.log("User closed payment window");
     }
   });
 
   handler.openIframe();
 };
 
-// 2. Create the Checkout Handler (This will call the Paystack function)
-const handleCheckout = () => {
-  if (cart.length === 0) {
-    alert(`Your ${brandConfig.name} cart is empty!`);
-    return;
-  }
-  
-  // Trigger the Paystack flow
-  payWithPaystack(cartTotal);
-}
-
-
-
-  //  for the mobile menu
-  const [isMenuOpen, setIsMenuOpen] = useState(false)
-
-  const [selectedItem, setSelectedItem] = useState(null) //
-   const upsell = brandConfig?.items || []; //
-
-   const [searchTerm, setSearchTerm] = useState("");
-
-const handleSearch = (e) => {
-  e.preventDefault(); // Stop page refresh
-  if (searchTerm.trim()) {
-    // This changes the URL to /menu?search=chips
-    navigate(`/menu?search=${encodeURIComponent(searchTerm.trim())}`);
-  } else {
-    // If empty, just go to the full menu
-    navigate('/menu');
-  }
-};
-
-  // --- RETURN ---
   return (
     <BrowserRouter>
-      <div className="min-h-screen bg-gray-50 font-sans relative">
-        
-        {/* Scroll To Top  */}
-       <ScrollToTop />
+      <div className="min-h-screen bg-gray-50 flex flex-col relative">
+        <ScrollToTop />
+        <Navbar user={user} cartCount={cart.length} setIsCartOpen={setIsCartOpen} />
 
-       <Navbar cartCount={cart.length} setIsCartOpen={setIsCartOpen} />
+        <main className="flex-grow">
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/login" element={<Auth />} />
+            <Route path="/menu" element={<Menu addToCart={addToCart} />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/orders" element={<Orders user={user} />} />
+          </Routes>
+        </main>
 
-        {/* --- ROUTES --- */}
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/menu" element={<Menu addToCart={addToCart} />} />
-          <Route path="/about" element={<About />} />
-        </Routes>
+        {/* --- FOOTER --- */}
+       <footer 
+  style={{ backgroundColor: brandConfig.backColor }} 
+  className="text-white pt-10 pb-12 mt-20"
+>
+  {/* --- INFINITE SCROLLING TICKER (Remains the same) --- */}
+  <div className="relative overflow-hidden mb-16 border-y border-white/10 py-4 bg-black/10">
+    <style>
+      {`
+        @keyframes marquee {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+        .animate-marquee {
+          display: flex;
+          width: max-content;
+          animation: marquee 30s linear infinite;
+        }
+      `}
+    </style>
+    <div className="animate-marquee flex gap-10 text-sm font-bold uppercase tracking-[0.2em]">
+      {[1, 2].map((i) => (
+        <div key={i} className="flex gap-10 items-center">
+          <span>{brandConfig.name === "Yummys" ? "🔥 Fresh Meals Daily" : "📦 Premium Global Imports"}</span>
+          <span className="opacity-30">•</span>
+          <span>{brandConfig.name === "Yummys" ? "⚡ Fast Delivery in Ikoyi" : "🌾 Quality Dry Goods"}</span>
+          <span className="opacity-30">•</span>
+          <span>{brandConfig.name === "Yummys" ? "🍗 Grilled to Perfection" : "🌍 Sourced Globally"}</span>
+          <span className="opacity-30">•</span>
+          <span>{brandConfig.name === "Yummys" ? "👨‍Chef's Specials" : "🏠 Essentials for your Home"}</span>
+          <span className="opacity-30">•</span>
+        </div>
+      ))}
+    </div>
+  </div>
 
-       {/* --- FOOTER --- */}
-        <footer
-        style={{ backgroundColor:brandConfig.backColor }}
-         className=" text-white pt-12 pb-8 mt-auto">
-          <div className="max-w-6xl mx-auto py-30 px-4 grid grid-cols-1 md:grid-cols-4 gap-8">
-            
-            {/* Column 1: Brand */}
-            <div>
-              <div className="flex items-center gap-2 mb-4">
-                 <img 
-                  src={brandConfig.logo} 
-                  alt="Logo" 
-                  className="h-8 w-8 md:w-10 md:h-10 rounded-full object-cover" 
-                />
-              </div>
-              <p className="text-gray-400 text-sm">
-                
-                {brandConfig.name === "Yummys" ? "Serving the tastiest culinaries in town since 2024. Fresh ingredients, fast delivery." : "Serving the best pantry essentials in town since 2024. Fresh ingredients, fast delivery."}
-              </p>
-            </div>
-
-            {/* Column 2: Quick Links */}
-            <div>
-              <h3 className="text-lg font-bold mb-4 text-style={{ color: brandConfig.primaryColor }}">Quick Links</h3>
-              <ul className="space-y-2 text-gray-400">
-                <li><Link to="/" className="hover:text-white transition">Home</Link></li>
-                <li><Link to="/menu" className="hover:text-white transition">{brandConfig.name === "Yummys" ? "Full Menu" : "View Products"}</Link></li>
-                <li><Link to="/about" className="hover:text-white transition">About Us</Link></li>
-                <li><a href="#" className="hover:text-white transition">Contact</a></li>
-              </ul>
-            </div>
-
-            {/* Column 3: Contact */}
-            <div>
-              <h3 className="text-lg font-bold mb-4 text-style={{ color: brandConfig.primaryColor }}">Contact Us</h3>
-              <ul className="space-y-2 text-gray-400">
-                <li>📍 Suite 95 Dolphin Plaza, Ikoyi, Lagos</li>
-                <li>📞 +234 8057080703</li>
-                <li>✉️ https://portfolio-project-two-ashy.vercel.app/</li>
-              </ul>
-            </div>
-
-            {/* Column 4: Newsletter */}
-            <div>
-              <h3 className="text-lg font-bold mb-4 text-style={{ color: brandConfig.primaryColor }}">Get Offers</h3>
-              <p className="text-gray-400 text-sm mb-4">Subscribe for 10% off your first order!</p>
-              <div className="flex">
-                <input 
-                  type="email" 
-                  placeholder="Enter email" 
-                  className="w-full px-3 py-2 rounded-l-md text-gray-400 focus:outline-none"
-                />
-                <button
-                style={{ backgroundColor: brandConfig.primaryColor, color: 'white' }}
-                 className="px-4 py-2 rounded-r-md font-bold hover:scale-95 hover:brightness-130 transition">
-                  Go
-                </button>
-              </div>
-            </div>
-
-          </div>
-
-          {/* Bottom Bar */}
-          <div className="border-t border-gray-800 mt-12 pt-8 text-center text-gray-500 text-sm">
-           {brandConfig.footerText}, All rights reserved. Built by Lateef.
-          </div>
-        </footer>
-
-       {/* --- CART MODAL --- */}
-{isCartOpen && (
-  <div className="fixed inset-0 z-50 flex">
+  <div className="max-w-6xl mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-12">
     
-    {/* 1. LEFT SIDE (The Dark Overlay) */}
-    {/* 'hidden md:flex' hides this whole section on mobile */}
-   
-
-    <div 
-      className="hidden md:flex flex-1 bg-gray-900 bg-opacity-80 items-center justify-center p-8"
-      onClick={() => setIsCartOpen(false)} // Clicking empty space closes modal
-    >
-      <div 
-        className="max-w-2xl w-full" 
-        onClick={(e) => e.stopPropagation()} // Clicking the cards WON'T close modal
-      >
-        {/* Back to menu button  */}
-     <Link to="/menu">
-        <button 
-        onClick={() => {
-          setIsCartOpen(false); // Close the cart
-          navigate('/menu');    // Move the user to the /menu page
-        }} 
-        style={{ backgroundColor: brandConfig.primaryColor }}
-        className="text-white text-sm rounded-lg px-3 py-2 mb-6 font-bold transition hover:brightness-110 active:scale-90"
-          >
-        {brandConfig.name === "Yummys" ? "Back to menu" : "Back to shop"} 
-      </button> 
+    {/* Column 1: Brand & Logo */}
+    <div className="flex flex-col items-start">
+      <Link to="/" className="hover:opacity-80 transition mb-4">
+        <img 
+          src={brandConfig.logo} 
+          className="h-16 w-16 rounded-full object-cover border-2 border-white/20 shadow-lg" 
+          alt="logo" 
+        />
       </Link>
-        <h3
-        style={{ color: brandConfig.primaryColor }}
-         className=" text-3xl font-bold mb-6">
-          {brandConfig.name === "Yummys" ? "Don't forget drinks and dessert!" : "You might also like!"}</h3>
-           
-        {/* The Mini Menu Grid */}
-<div className="grid grid-cols-2 gap-6">
-  {/* Map from the brandConfig instead of a hardcoded list */}
-  {(brandConfig?.upsells || []).map((upsell) => (
-    <div key={upsell.id} className="bg-white rounded-xl p-4 flex items-center gap-4 shadow-xl hover:scale-105 transition">
-      
-      {/* Dynamic Image Path */}
-      <img 
-        src={`${brandConfig.imageFolder}/${upsell.image}`}
-        alt={upsell.name} 
-        className="w-24 h-24 object-cover rounded-lg bg-gray-50" 
-      />
+      <p className="text-sm opacity-80 leading-relaxed">
+        {brandConfig.name} <br /> 
+        Quality products and exceptional service since 2024.
+      </p>
+    </div>
 
-      <div>
-        <h4 className="font-bold text-lg">{upsell.name}</h4>
-        
-        {/* FIXED: Correct syntax for brand color on price */}
-        <p style={{ color: brandConfig.primaryColor }} className="font-bold">
-          ₦{upsell.price.toLocaleString()}
+    {/* Column 2: Navigation */}
+    <div>
+      <h3 style={{ color: brandConfig.primaryColor }} className="font-bold text-lg mb-6 uppercase tracking-wider">
+        Navigation
+      </h3>
+      <ul className="text-sm space-y-3 opacity-90">
+        <li><Link to="/" className="hover:underline transition">Home</Link></li>
+        <li><Link to="/menu" className="hover:underline transition">{brandConfig.name === "Yummys" ? "Full Menu" : "Our Shop"}</Link></li>
+        <li><Link to="/about" className="hover:underline transition">About Us</Link></li>
+        <li><Link to="/orders" className="hover:underline transition">My Orders</Link></li>
+      </ul>
+    </div>
+
+    {/* Column 3: Contact (NOW WITH REACT ICONS) */}
+    <div>
+      <h3 style={{ color: brandConfig.primaryColor }} className="font-bold text-lg mb-6 uppercase tracking-wider">
+        Contact Us
+      </h3>
+      <ul className="text-sm space-y-5 opacity-90">
+        <li className="flex items-start gap-4">
+      <a 
+        href="https://www.google.com/maps/dir/?api=1&destination=Suite+95+Dolphin+Plaza+Ikoyi+Lagos" 
+        target="_blank" 
+        rel="noopener noreferrer"
+        className="flex items-start gap-4 group transition"
+      >
+        {/* The icon scales up slightly when the row is hovered */}
+        <FaMapMarkerAlt 
+          style={{ color: brandConfig.primaryColor }} 
+          className="text-xl flex-shrink-0 mt-1 group-hover:scale-120 transition-transform" 
+        />
+        <span className="group-hover:underline leading-relaxed">
+          Suite 95, Dolphin Plaza, Ikoyi, Lagos
+        </span>
+      </a>
+    </li>
+        <li>
+          <a href="https://wa.me/2348057080703" className="flex items-center gap-4 group transition">
+            <FaWhatsapp className="text-2xl text-green-500 group-hover:scale-120 transition-transform" />
+            <span className="group-hover:underline">+234 805 708 0703</span>
+          </a>
+        </li>
+        <li>
+          <a href={`mailto:support@${brandConfig.name.toLowerCase().replace(/\s/g, '')}.com`} className="flex items-center gap-4 group transition">
+            <FaEnvelope style={{ color: brandConfig.primaryColor }} className="text-xl group-hover:scale-120 transition-transform" />
+            <span className="group-hover:underline">support@{brandConfig.name.toLowerCase().replace(/\s/g, '')}.com</span>
+          </a>
+        </li>
+      </ul>
+    </div>
+
+    {/* Column 4: Newsletter */}
+    <div>
+      <h3 style={{ color: brandConfig.primaryColor }} className="font-bold text-lg mb-6 uppercase tracking-wider">
+        Newsletter
+      </h3>
+      <div className="flex relative items-center">
+        <input 
+          type="email" 
+          className="p-3 w-full text-white bg-gray-800 border border-gray-600 rounded-lg text-sm focus:outline-none pr-12" 
+          placeholder="Email Address" 
+        />
+        <button 
+          style={{ backgroundColor: brandConfig.primaryColor }} 
+          className="absolute right-1 p-2 rounded-md text-white hover:brightness-110 transition active:scale-90"
+        >
+          <FaPaperPlane />
+        </button>
+      </div>
+    </div>
+  </div>
+
+      {/* BOTTOM BAR */}
+      <div className="max-w-6xl mx-auto px-4 mt-20 pt-8 border-t border-white/10 text-center">
+        <p className="text-xs opacity-50 uppercase tracking-widest">
+          &copy; {new Date().getFullYear()} {brandConfig.name}. All Rights Reserved.
         </p>
-
-        <button 
-          onClick={() => addToCart({ ...upsell, quantity: 1, description: "Upsell item" })}
-          style={{ backgroundColor: brandConfig.primaryColor }}
-          // Removed hover:bg-yellow-600 and used brightness for dynamic hover
-          className="mt-2 text-white px-4 py-1 rounded text-sm font-bold transition hover:brightness-110 active:scale-95"
-        >
-          Add +
-        </button>
       </div>
-    </div>
-  ))}
-</div>
-      </div>
-    </div>
+    </footer>
 
-    {/* 2. RIGHT SIDE (The Actual Cart) */}
-    {/* On mobile, this takes full width. On desktop, it stays on the right. */}
-    <div className="bg-yellow-50 w-full max-w-md h-full p-6 flex flex-col shadow-2xl animate-slide-in">
-      
-      {/* --- HEADER --- */}
-      <div className="flex justify-between items-center mb-6 border-b border-orange-200 pb-4">
-        <h2 className="text-2xl font-bold text-gray-800">Your Order</h2>
-        <button 
-          onClick={() => setIsCartOpen(false)} 
-          className="text-gray-500 hover:text-red-500 text-xl font-bold"
-        >
-          ✕
-        </button>
-      </div>
-
-      {/* --- CART ITEMS LIST --- */}
-      <div className="flex-1 overflow-y-auto space-y-4 pr-2">
-        {cart.length === 0 ? (
-          <div className="text-center mt-20">
-            <span className="text-6xl">🛒</span>
-            <p className="text-gray-500 mt-4">Your cart is empty.</p>
-            <button 
-              onClick={() => setIsCartOpen(false)}
-              className="mt-4 text-orange-600 font-bold underline"
-            >
-             {brandConfig.name === "Yummys" ? "Go to Menu" : "Go to Shop"} 
-            </button>
-          </div>
-        ) : (
-          cart.map((item) => (
-            <div key={item.id} className="flex justify-between items-center bg-white p-3 rounded-lg shadow-sm">
-              <div className="flex items-center gap-3">
-                <img src={`${brandConfig.imageFolder}/${item.image}`} alt={item.name} className="w-16 h-16 rounded-md object-cover" />
-                <div>
-                  <h4 className="font-bold text-gray-800">{item.name}</h4>
-                  <div className="flex items-center gap-2 mt-1">
-                    <button onClick={() => updateQuantity(item.id, -1)} className="bg-orange-100 text-orange-600 w-6 h-6 rounded hover:bg-orange-200">-</button>
-                    <span className="text-sm font-bold">{item.quantity}</span>
-                    <button onClick={() => updateQuantity(item.id, 1)} className="bg-orange-100 text-orange-600 w-6 h-6 rounded hover:bg-orange-200">+</button>
-                  </div>
+        {/* --- CART MODAL --- */}
+        {isCartOpen && (
+          <div className="fixed inset-0 z-[100] flex">
+            {/* 1. LEFT SIDE: UPSELLS (Desktop Only) */}
+            <div className="hidden lg:flex flex-1 bg-black bg-opacity-80 items-center justify-center p-10">
+              <div className="max-w-2xl w-full">
+                <button 
+                  onClick={() => { setIsCartOpen(false); window.location.href='/menu'; }} 
+                  style={{ backgroundColor: brandConfig.primaryColor }}
+                  className="text-white px-4 py-2 rounded-lg mb-6 font-bold"
+                >
+                  ← {brandConfig.name === "Yummys" ? "Back to Menu" : "Back to Shop"}
+                </button>
+                
+                <h3 style={{ color: brandConfig.primaryColor }} className="text-3xl font-bold mb-6">You might also like...</h3>
+                
+                <div className="grid grid-cols-2 gap-6">
+                  {(brandConfig?.upsells || []).map((item) => (
+                    <div key={item.id} className="bg-white rounded-xl p-4 flex items-center gap-4 shadow-xl">
+                      <img 
+                        src={`${brandConfig.imageFolder}/${item.image}`} 
+                        className="w-20 h-20 object-contain bg-gray-50 p-2 rounded-lg" 
+                        alt={item.name} 
+                      />
+                      <div>
+                        <h4 className="font-bold text-gray-800">{item.name}</h4>
+                        <p style={{ color: brandConfig.primaryColor }} className="font-bold">₦{item.price.toLocaleString()}</p>
+                        <button 
+                          onClick={() => addToCart(item)}
+                          style={{ backgroundColor: brandConfig.primaryColor }}
+                          className="mt-2 text-white px-3 py-1 rounded text-xs font-bold"
+                        >
+                          Add +
+                        </button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
-              <div className="text-right">
-                <span className="block font-bold text-style={{ color: brandConfig.primaryColor }}">#{item.price * item.quantity}</span>
-                <button onClick={() => removeFromCart(item.id)} className="text-xs text-yellow-600 hover:text-yellow-700 underline">Remove</button>
-              </div>
             </div>
-          ))
+
+            {/* 2. RIGHT SIDE: CART SIDEBAR */}
+            <div style={{ backgroundColor: brandConfig.lightColor }} className="w-full max-w-md h-full shadow-2xl flex flex-col p-6 animate-slide-in relative">
+              <div className="flex justify-between items-center mb-6 border-b pb-4">
+                <h2 className="text-2xl font-bold">Your Order</h2>
+                <button onClick={() => setIsCartOpen(false)} className="text-2xl">✕</button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto space-y-4 pr-2">
+                {cart.length === 0 ? (
+                  <div className="text-center py-20">
+                    <p className="text-gray-500">Your cart is empty.</p>
+                  </div>
+                ) : (
+                  cart.map((item) => (
+                    <div key={item.id} className="flex items-center justify-between bg-white p-3 rounded-xl shadow-sm">
+                      <div className="flex items-center gap-3">
+                        <img 
+                          src={item.image_url?.startsWith('http') ? item.image_url : `${brandConfig.imageFolder}/${item.image_url || item.image}`} 
+                          className="w-16 h-16 object-contain bg-gray-50 rounded-lg p-1" 
+                          alt={item.name}
+                        />
+                        <div>
+                          <h4 className="font-bold text-xs">{item.name}</h4>
+                          <div className="flex items-center gap-2 mt-1">
+                            <button onClick={() => updateQuantity(item.id, -1)} className="px-2 bg-gray-100 rounded">-</button>
+                            <span className="text-xs font-bold">{item.quantity}</span>
+                            <button onClick={() => updateQuantity(item.id, 1)} className="px-2 bg-gray-100 rounded">+</button>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p style={{ color: brandConfig.primaryColor }} className="font-bold text-sm">₦{(item.price * item.quantity).toLocaleString()}</p>
+                        <button onClick={() => removeFromCart(item.id)} className="text-[10px] text-red-500 underline">Remove</button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              <div className="mt-6 border-t pt-4">
+              <div className="flex justify-between text-xl font-bold mb-4">
+                <span>Total:</span>
+                {/* .toLocaleString makes the price look pretty */}
+                <span>₦{cartTotal.toLocaleString()}</span>
+              </div>
+              
+              <button 
+                type="button" 
+                onClick={() => handleCheckout()} 
+                style={{ backgroundColor: brandConfig.primaryColor }}
+                className="w-full text-white py-4 rounded-xl font-bold shadow-lg hover:brightness-110 active:scale-95 transition"
+              >
+                Checkout Now
+              </button>
+            </div>
+            </div>
+          </div>
         )}
       </div>
-
-      {/* --- CHECKOUT --- */}
-      <div className="mt-6 border-t border-orange-200 pt-4">
-        <div className="flex justify-between text-xl font-bold mb-4 text-gray-800">
-          <span>Total:</span>
-          <span>#{cartTotal}</span>
-        </div>
-        <button 
-          onClick={handleCheckout} 
-          style={{ backgroundColor: brandConfig.primaryColor }}
-          className="w-full text-white py-4 rounded-xl font-bold hover:bg-yellow-600 transition shadow-lg transform hover:-translate-y-1"
-        >
-          Checkout Now
-        </button>
-      </div>
-
-    </div>
-   </div>
-   )}
-   </div>
     </BrowserRouter>
   )
-
 }
-export default App
+
+export default App;

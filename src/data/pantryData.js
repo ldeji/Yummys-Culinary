@@ -84,7 +84,7 @@ export const pantryItems = [
     id: 10,
     name: " Member's Honey",
     price: 21739,
-    image: "Honey.webp",
+    image: "Honey.webpHoney.webp",
     description: "10",
     longDescription: "Buy in bulk and save...",
     ingredients: ["100% Local Flour"]

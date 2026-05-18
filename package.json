@@ -14,10 +14,12 @@
     "build:pantry": "env-cmd -f .env.pantry vite build"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.105.4",
     "@tailwindcss/vite": "^4.1.18",
     "env-cmd": "^11.0.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "react-icons": "^5.6.0",
     "react-router-dom": "^7.12.0",
     "tailwindcss": "^4.1.18"
   },
