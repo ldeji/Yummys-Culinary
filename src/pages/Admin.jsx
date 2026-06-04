@@ -54,25 +54,26 @@ export default function Admin({ user }) {
 
   // 1. IMPROVED IMAGE UPLOAD
    async function handleImageUpload(e) {
-    const file = e.target.files[0];
+  const file = e.target.files[0];
   if (!file) return;
 
   try {
     setUploading(true);
-    console.log("Starting upload...");
+    console.log("Starting upload process...");
 
+    // Create a unique filename
     const fileExt = file.name.split('.').pop();
-    const fileName = `${Date.now()}.${fileExt}`;
+    const fileName = `${Date.now()}.${fileExt}`; 
     const filePath = `${fileName}`;
 
-    // UPLOAD TO STORAGE
-    const { data, error: uploadError } = await supabase.storage
+    // UPLOAD TO SUPABASE
+    const { data: uploadData, error: uploadError } = await supabase.storage
       .from('product-images')
       .upload(filePath, file);
 
     if (uploadError) {
-      console.error("Upload Error:", uploadError);
-      alert("Upload failed: " + uploadError.message);
+      console.error("Supabase Storage Error:", uploadError);
+      alert(`Upload Failed: ${uploadError.message}`);
       return;
     }
 
@@ -81,19 +82,20 @@ export default function Admin({ user }) {
       .from('product-images')
       .getPublicUrl(filePath);
 
-    if (urlData) {
-      console.log("URL Generated:", urlData.publicUrl);
+    if (urlData?.publicUrl) {
+      console.log("Success! Image URL:", urlData.publicUrl);
       setNewProduct({ ...newProduct, image_url: urlData.publicUrl });
-      alert("Image uploaded successfully! Now you can save the product.");
+      alert("Image uploaded successfully!");
     }
 
   } catch (err) {
-    console.error("Unexpected Error:", err);
-    alert("An error occurred during upload.");
+    console.error("Unexpected Javascript Error:", err);
+    alert("An unexpected error occurred. Check the console.");
   } finally {
-    setUploading(false); // This stops the "Uploading..." text NO MATTER WHAT
+    // THIS IS THE FIX: This stops the "Uploading..." text no matter what
+    setUploading(false); 
   }
-  }
+}
 
   // 2. ADD OR UPDATE PRODUCT
   async function handleSubmit(e) {

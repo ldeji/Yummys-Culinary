@@ -19,10 +19,10 @@ const brands = {
     accentColor: "#E5E7EB",  // gray-200
     backColor: "#111827", // dark-gray-900
      heroImages: [
-      { id: 1, img: "/images/yummys/Amala.jpg", blob: "#FDE047" }, // yellow-300
-      { id: 2, img: "/images/yummys/Abacha.jpg", blob: "#FDE047" },
-      { id: 3, img: "https://images.unsplash.com/photo-1604382354936-07c5d9983bd3?w=600", blob: "#FEFCE8" }, // yellow-100
-      { id: 4, img: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600", blob: "#FDE047" }
+      { id: 1, img: "/images/yummys/Amala.webp", blob: "#FDE047" },
+      { id: 2, img: "/images/yummys/Abacha.webp", blob: "#FDE047" },
+      { id: 3, img: "/images/yummys/JollofAndChicken.webp", blob: "#FEFCE8" }, // yellow-100
+      { id: 4, img: "/images/yummys/Asaro.webp", blob: "#FDE047" },
     ]
   },
   "pantry-co": {
