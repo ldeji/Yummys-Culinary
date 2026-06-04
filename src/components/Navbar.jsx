@@ -1,14 +1,31 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { brandConfig } from '../config/brands';
 import { supabase } from '../config/supabaseClient';
 import { CiSearch } from "react-icons/ci";
 
-
 export default function Navbar({ cartCount, setIsCartOpen, user }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false); // This tracks if the user is an admin
   const navigate = useNavigate();
+
+  // CHECK IF USER IS ADMIN
+ useEffect(() => {
+    if (user) {
+      // For now, let's just check if you are logged in as the Admin email
+      if (user.email === "your-admin-email@example.com") {
+        setIsAdmin(true);
+      } else {
+        // Otherwise, keep trying the database
+        const checkRole = async () => {
+          const { data } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+          if (data?.role === 'admin') setIsAdmin(true);
+        };
+        checkRole();
+      }
+    }
+  }, [user]);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -19,13 +36,10 @@ export default function Navbar({ cartCount, setIsCartOpen, user }) {
     }
   };
 
-  // Correct Logout Function
   const handleLogout = async () => {
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
-      
-      // Successfully logged out - Refresh and go home
       window.location.href = "/"; 
     } catch (error) {
       alert("Error logging out: " + error.message);
@@ -55,7 +69,7 @@ export default function Navbar({ cartCount, setIsCartOpen, user }) {
             </span>
           </Link>
 
-          {/* 2. SEARCH BAR (Desktop) */}
+          {/* 2. SEARCH BAR */}
           <form onSubmit={handleSearch} className="hidden md:flex flex-grow max-w-md relative">
             <input 
               type="text"
@@ -70,7 +84,7 @@ export default function Navbar({ cartCount, setIsCartOpen, user }) {
             </button>
           </form>
 
-          {/* 3. Desktop Menu & Icons */}
+          {/* 3. Desktop Menu */}
           <div className="flex items-center gap-4 md:gap-8 flex-shrink-0">
             <ul className="hidden lg:flex gap-6 font-medium" style={{ color: brandConfig.primaryColor }}>
               <Link to="/" className="hover:opacity-70 transition">Home</Link>
@@ -81,14 +95,24 @@ export default function Navbar({ cartCount, setIsCartOpen, user }) {
             </ul>
 
             <div className="flex items-center gap-3">
-               {/* 4. AUTH SECTION (Orders + Logout/Login) */}
-               {user && (
-                  <Link to="/orders" className="text-sm font-bold text-gray-600 hover:opacity-70">
-                    My Orders
-                  </Link>
-                )}
+              {/* AUTH SECTION */}
+              {user && (
+                <Link to="/orders" className="text-sm font-bold text-gray-600 hover:opacity-70">
+                  My Orders
+                </Link>
+              )}
 
-               {user ? (
+              {/* ADMIN BUTTON - FIXED LOGIC */}
+              {isAdmin && (
+                <Link 
+                  to="/admin" 
+                  className="bg-red-600 text-white px-3 py-1 rounded-md text-xs font-bold animate-pulse hover:bg-red-700"
+                >
+                  Admin Panel
+                </Link>
+              )}
+
+              {user ? (
                 <button 
                   onClick={handleLogout}
                   className="text-gray-600 text-sm font-bold hover:text-red-500 transition-colors"
@@ -120,7 +144,7 @@ export default function Navbar({ cartCount, setIsCartOpen, user }) {
                 )}
               </button>
 
-              {/* Hamburger Button (Mobile) */}
+              {/* Hamburger Button */}
               <button 
                 onClick={() => setIsMenuOpen(!isMenuOpen)} 
                 className="md:hidden text-2xl text-gray-700 focus:outline-none"
@@ -131,7 +155,7 @@ export default function Navbar({ cartCount, setIsCartOpen, user }) {
           </div>
         </div>
 
-        {/* 5. Mobile Menu Dropdown */}
+        {/* 4. Mobile Menu Dropdown */}
         {isMenuOpen && (
           <div className="md:hidden mt-4 pb-4 border-t pt-4 space-y-4">
             <form onSubmit={handleSearch} className="relative mb-4">
@@ -143,7 +167,7 @@ export default function Navbar({ cartCount, setIsCartOpen, user }) {
                 className="w-full border-2 rounded-lg py-2 px-4 focus:outline-none"
                 style={{ borderColor: brandConfig.primaryColor }}
               />
-              <button type="submit" className="absolute right-3 top-2.5 hover:opacity-70 transition hover: scale-115">
+              <button type="submit" className="absolute right-3 top-2.5">
                 <CiSearch />
               </button>
             </form>
@@ -152,7 +176,10 @@ export default function Navbar({ cartCount, setIsCartOpen, user }) {
             <Link to="/menu" className="text-gray-700 font-medium block p-2 rounded-md" style={{ backgroundColor: brandConfig.lightColor }} onClick={() => setIsMenuOpen(false)}>🍴 {brandConfig.name === "Yummys" ? "Menu" : "Shop"}</Link>
             <Link to="/about" className="text-gray-700 font-medium block p-2 rounded-md" style={{ backgroundColor: brandConfig.lightColor }} onClick={() => setIsMenuOpen(false)}>ℹ️ About</Link>
             
-            {/* Added Orders & Logout to Mobile Menu */}
+            {isAdmin && (
+              <Link to="/admin" className="text-white font-bold block p-2 rounded-md bg-red-600" onClick={() => setIsMenuOpen(false)}>🛡️ Admin Panel</Link>
+            )}
+            
             {user ? (
               <>
                 <Link to="/orders" className="text-gray-700 font-medium block p-2 rounded-md bg-gray-100" onClick={() => setIsMenuOpen(false)}>📋 My Orders</Link>

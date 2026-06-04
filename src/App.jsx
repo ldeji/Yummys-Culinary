@@ -10,7 +10,7 @@ import Auth from './pages/Auth';
 import { supabase } from './config/supabaseClient';
 import Orders from './pages/Orders';
 import { FaWhatsapp, FaEnvelope, FaMapMarkerAlt, FaPaperPlane } from 'react-icons/fa'; // Import the icons
-
+import Admin from './pages/Admin';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -18,15 +18,38 @@ function App() {
   const [isCartOpen, setIsCartOpen] = useState(false)
 
   // --- AUTH LOGIC ---
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-    });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-    });
-    return () => subscription.unsubscribe();
-  }, []);
+ useEffect(() => {
+  const getSession = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      // THIS IS THE KEY: We fetch the role from the profiles table
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', session.user.id)
+        .single();
+      
+      // We save the user AND their role into the state
+      setUser({ ...session.user, role: profile?.role });
+    } else {
+      setUser(null);
+    }
+  };
+
+  getSession();
+
+  // Also listen for login/logout changes
+  const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    if (session?.user) {
+      const { data: profile } = await supabase.from('profiles').select('role').eq('id', session.user.id).single();
+      setUser({ ...session.user, role: profile?.role });
+    } else {
+      setUser(null);
+    }
+  });
+
+  return () => subscription.unsubscribe();
+}, []);
 
   // --- CART CALCULATIONS ---
   const cartTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0)
@@ -135,6 +158,7 @@ const handleCheckout = () => {
             <Route path="/menu" element={<Menu addToCart={addToCart} />} />
             <Route path="/about" element={<About />} />
             <Route path="/orders" element={<Orders user={user} />} />
+            <Route path="/admin" element={<Admin user={user} />} />
           </Routes>
         </main>
 

@@ -13,31 +13,28 @@ export default function Auth() {
   const navigate = useNavigate();
 
   const handleAuth = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-
+  e.preventDefault();
+  setLoading(true);
+  try {
     if (isSignUp) {
-      // --- SIGN UP LOGIC ---
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-            data: {
-                full_name: fullName,
-                brand_name: brandConfig.id
-            }
-        }
+      const { error } = await supabase.auth.signUp({
+        email, password,
+        options: { data: { full_name: fullName, brand_name: brandConfig.name } }
       });
-      if (error) alert(error.message);
-      else alert("Check your email for the confirmation link!");
+      if (error) throw error;
+      alert("Success! Check your email or try logging in.");
     } else {
-      // --- LOGIN LOGIC ---
       const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) alert(error.message);
-      else navigate('/'); // Go home after login
+      if (error) throw error;
+      navigate('/');
     }
-    setLoading(false);
-  };
+  } catch (error) {
+    console.error("Auth Error:", error.message);
+    alert(error.message);
+  } finally {
+    setLoading(false); // This stops the "Processing" hang
+  }
+};
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">

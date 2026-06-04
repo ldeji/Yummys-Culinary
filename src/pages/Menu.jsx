@@ -39,9 +39,17 @@ export default function Menu({ addToCart }) {
 
   // Helper function to handle images safely
   const getImageUrl = (url) => {
-    if (!url) return "/images/placeholder.jpg"; // Fallback if column is empty
-    if (url.startsWith('http')) return url; // Use full link if it exists
-    return `${brandConfig.imageFolder}/${url}`; // Use local folder if it's just a filename
+    if (!url) return "https://via.placeholder.com/150";
+
+  // If the image is a full URL from a Supabase upload
+  if (url.includes('supabase.co')) return url;
+
+  // If it's just a local filename (like 'Amala.jpg')
+  // We determine the folder based on the brand
+  const currentBrand = import.meta.env.VITE_BRAND || 'yummys';
+  const folder = currentBrand === 'pantry-co' ? 'pantry' : 'yummys';
+
+  return `/images/${folder}/${url}`;
   };
 
   if (loading) {
