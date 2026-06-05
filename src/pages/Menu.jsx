@@ -15,8 +15,7 @@ export default function Menu({ addToCart }) {
   useEffect(() => {
     async function fetchProducts() {
       setLoading(true);
-      const currentBrandID = import.meta.env.VITE_BRAND || 'yummys'; // SAFETY CHECK: Ensure this environment variable is set and valid
-
+      const currentBrandID = import.meta.env.VITE_BRAND || 'yummys'; // SAFETY CHECK: Ensure this environment variable is set correctly
       const { data, error } = await supabase  
         .from('products') // Make sure this matches your actual table name
         .select('*')  // SAFETY CHECK: Ensure currentBrandID is valid before querying
@@ -99,7 +98,7 @@ export default function Menu({ addToCart }) {
                 <div className="p-4">
                   <div className="flex justify-between items-start mb-1">
                     <h3 className="font-bold text-lg text-gray-800 leading-tight">{item.name}</h3>
-                    <span style={{ color: brandConfig.accentColor }} className="font-bold ml-2">
+                    <span style={{ color: brandConfig.lightColor }} className="font-bold ml-2">
                       ₦{item.price?.toLocaleString()}
                     </span>
                   </div>

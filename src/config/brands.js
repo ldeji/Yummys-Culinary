@@ -33,7 +33,7 @@ const brands = {
     footerText: "© 2026 Pantry & Co",
     items: pantryItems,
     upsells: pantryUpsells,
-    aboutImage: "/images/pantry/PantryCollection.jpeg",
+    aboutImage: "/images/pantry/PantryCollection.webp",
     primaryColor:  "#4a6d43", // green-700
     lightColor: "#d40785",   // fushia
     accentColor: "#c5a47f",  // peach
