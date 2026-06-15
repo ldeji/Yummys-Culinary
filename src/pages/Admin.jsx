@@ -20,22 +20,36 @@ export default function Admin({ user }) {
     checkAdmin();
   }, [user]);
 
- async function checkAdmin() {
+async function checkAdmin() {
   if (!user) { navigate('/login'); return; }
 
   const currentBrand = import.meta.env.VITE_BRAND || 'yummys';
 
-  const { data: profile } = await supabase
+  const { data: profile, error } = await supabase
     .from('profiles')
     .select('role, brand_id')
     .eq('id', user.id)
     .single();
 
-  // Logic: Must be an admin AND the brand_id must match the current site
-  if (profile?.role === 'admin' && profile?.brand_id === currentBrand) {
-    fetchData();
+  if (error || !profile) {
+    console.error("Profile check failed");
+    navigate('/');
+    return;
+  }
+
+  // 1. You are the Super Admin
+  const isSuperAdmin = profile.brand_id === 'all';
+  
+  // 2. This is a Client Admin for THIS specific brand
+  const isBrandOwner = profile.brand_id === currentBrand;
+
+  if (profile.role === 'admin' && (isSuperAdmin || isBrandOwner)) {
+    // ACCESS GRANTED
+    fetchData(); 
   } else {
-    alert("You are not authorized to manage this specific brand.");
+    // ACCESS DENIED
+    const brandMessage = isSuperAdmin ? "Super Admin" : profile.brand_id;
+    alert(`Access Denied: You are registered as a ${brandMessage} admin. This site is ${currentBrand}.`);
     navigate('/');
   }
 }
