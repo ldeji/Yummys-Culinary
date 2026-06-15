@@ -20,11 +20,25 @@ export default function Admin({ user }) {
     checkAdmin();
   }, [user]);
 
-  async function checkAdmin() {
-    if (!user) { navigate('/login'); return; }
-    const { data } = await supabase.from('profiles').select('role').eq('id', user.id).single();
-    if (data?.role !== 'admin') { navigate('/'); } else { fetchData(); }
+ async function checkAdmin() {
+  if (!user) { navigate('/login'); return; }
+
+  const currentBrand = import.meta.env.VITE_BRAND || 'yummys';
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role, brand_id')
+    .eq('id', user.id)
+    .single();
+
+  // Logic: Must be an admin AND the brand_id must match the current site
+  if (profile?.role === 'admin' && profile?.brand_id === currentBrand) {
+    fetchData();
+  } else {
+    alert("You are not authorized to manage this specific brand.");
+    navigate('/');
   }
+}
 
   async function fetchData() {
     setLoading(true);

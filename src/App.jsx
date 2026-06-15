@@ -11,6 +11,7 @@ import { supabase } from './config/supabaseClient';
 import Orders from './pages/Orders';
 import { FaWhatsapp, FaEnvelope, FaMapMarkerAlt, FaPaperPlane } from 'react-icons/fa'; // Import the icons
 import Admin from './pages/Admin';
+import ResetPassword from './pages/ResetPassword';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -159,6 +160,7 @@ const handleCheckout = () => {
             <Route path="/about" element={<About />} />
             <Route path="/orders" element={<Orders user={user} />} />
             <Route path="/admin" element={<Admin user={user} />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
           </Routes>
         </main>
 

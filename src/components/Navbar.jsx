@@ -9,23 +9,41 @@ export default function Navbar({ cartCount, setIsCartOpen, user }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false); // This tracks if the user is an admin
   const navigate = useNavigate();
+  const currentBrand = import.meta.env.VITE_BRAND || 'yummys';
 
   // CHECK IF USER IS ADMIN
  useEffect(() => {
-    if (user) {
-      // For now, let's just check if you are logged in as the Admin email
-      if (user.email === "your-admin-email@example.com") {
-        setIsAdmin(true);
-      } else {
-        // Otherwise, keep trying the database
-        const checkRole = async () => {
-          const { data } = await supabase.from('profiles').select('role').eq('id', user.id).single();
-          if (data?.role === 'admin') setIsAdmin(true);
-        };
-        checkRole();
+  if (user) {
+    const checkRole = async () => {
+      // 1. Fetch the profile
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('role, brand_id')
+        .eq('id', user.id)
+        .single();
+      
+      if (error) {
+        console.error("Auth check error:", error.message);
+        return;
       }
-    }
-  }, [user]);
+
+      // 2. Define the current brand from Env
+      const currentBrand = import.meta.env.VITE_BRAND || 'yummys';
+
+      // 3. Logic: Allow access if user is 'admin' AND (brand matches OR brand is 'all')
+      if (profile && profile.role === 'admin') {
+        if (profile.brand_id === currentBrand || profile.brand_id === 'all') {
+          setIsAdmin(true);
+        } else {
+          setIsAdmin(false);
+        }
+      }
+    };
+    checkRole();
+  } else {
+    setIsAdmin(false);
+  }
+}, [user]);
 
   const handleSearch = (e) => {
     e.preventDefault();

@@ -5,43 +5,49 @@ import { useNavigate } from 'react-router-dom';
 
 export default function Auth() {
   const [loading, setLoading] = useState(false);
-  const [isSignUp, setIsSignUp] = useState(false); // Toggle between Login and Signup
+  const [mode, setMode] = useState('login'); // 'login', 'signup', 'forgot'
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
-  
   const navigate = useNavigate();
 
- const handleAuth = async (e) => {
+  const handleAuth = async (e) => {
     e.preventDefault();
     setLoading(true);
-    
-    // Safety check: Is the client even loaded?
-    if (!supabase) {
-      alert("Database connection not initialized.");
-      setLoading(false);
-      return;
-    }
 
     try {
-      if (isSignUp) {
+      if (mode === 'signup') {
         const { error } = await supabase.auth.signUp({
           email,
           password,
-          options: { data: { full_name: fullName, brand_name: brandConfig.name } }
+          options: { 
+            data: { 
+              full_name: fullName, 
+              // We save which brand they signed up on
+              brand_id: import.meta.env.VITE_BRAND || 'yummys' 
+            } 
+          }
         });
         if (error) throw error;
-        alert("Check your email for confirmation!");
-      } else {
+        alert("Registration Successful! Please check your email to confirm your account.");
+        setMode('login');
+      } else if (mode === 'login') {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         navigate('/');
+      } else if (mode === 'forgot') {
+        // This sends the email with a link to your reset-password page
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}/reset-password`,
+        });
+        if (error) throw error;
+        alert("Password reset link has been sent to your email!");
+        setMode('login');
       }
     } catch (error) {
-      console.error("Auth Error:", error.message);
       alert(error.message);
     } finally {
-      setLoading(false); // This stops the "Processing" hang
+      setLoading(false);
     }
   };
 
@@ -49,49 +55,84 @@ export default function Auth() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
       <div className="max-w-md w-full bg-white rounded-3xl shadow-2xl overflow-hidden">
         
-        {/* Branded Header */}
+        {/* Header - Brand Colored */}
         <div style={{ backgroundColor: brandConfig.primaryColor }} className="p-8 text-center text-white">
-          <img src={brandConfig.logo} className="h-16 w-16 rounded-full mx-auto mb-4 border-2 border-white shadow-lg" alt="Logo" />
-          <h2 className="text-3xl font-bold">{isSignUp ? 'Create Account' : 'Welcome Back'}</h2>
+          <h2 className="text-3xl font-bold">
+            {mode === 'signup' ? 'Create Account' : mode === 'login' ? 'Welcome Back' : 'Forgot Password'}
+          </h2>
           <p className="opacity-90">{brandConfig.name}</p>
         </div>
 
         <form onSubmit={handleAuth} className="p-8 space-y-4">
-      {isSignUp && (
-        <input 
-          id="full_name" // Added ID
-          name="full_name" // Added Name
-          type="text" placeholder="Full Name" required 
-          className="w-full p-3 border rounded-xl"
-          onChange={(e) => setFullName(e.target.value)}
-        />
-      )}
-      <input 
-        id="email" // Added ID
-        name="email" // Added Name
-        type="email" placeholder="Email Address" required 
-        className="w-full p-3 border rounded-xl"
-        autoComplete="email"
-        onChange={(e) => setEmail(e.target.value)}
-      />
-      <input 
-        id="password" // Added ID
-        name="password" // Added Name
-        type="password" placeholder="Password" required 
-        className="w-full p-3 border rounded-xl"
-        autoComplete="current-password"
-        onChange={(e) => setPassword(e.target.value)}
-      />
+          
+          {/* 1. Full Name (Only for Sign Up) */}
+          {mode === 'signup' && (
+            <input 
+              type="text" placeholder="Full Name" required 
+              className="w-full p-3 border rounded-xl focus:outline-none border-gray-200" 
+              onChange={(e) => setFullName(e.target.value)} 
+            />
+          )}
+          
+          {/* 2. Email (Always visible) */}
+          <input 
+            type="email" placeholder="Email Address" required 
+            className="w-full p-3 border rounded-xl focus:outline-none border-gray-200" 
+            onChange={(e) => setEmail(e.target.value)} 
+          />
+          
+          {/* 3. Password (Hidden for "Forgot" mode) */}
+          {mode !== 'forgot' && (
+            <div>
+              <input 
+                type="password" placeholder="Password" required 
+                className="w-full p-3 border rounded-xl focus:outline-none border-gray-200" 
+                onChange={(e) => setPassword(e.target.value)} 
+              />
+              {/* FORGOT PASSWORD LINK */}
+              {mode === 'login' && (
+                <button 
+                  type="button" 
+                  onClick={() => setMode('forgot')} 
+                  className="text-xs text-gray-400 mt-2 hover:underline float-right"
+                >
+                  Forgot Password?
+                </button>
+              )}
+            </div>
+          )}
 
-      <button 
-        disabled={loading}
-        style={{ backgroundColor: brandConfig.primaryColor }}
-        className="w-full py-4 text-white rounded-xl font-bold disabled:opacity-50"
-      >
-        {loading ? 'Connecting to Server...' : isSignUp ? 'Sign Up' : 'Login'}
-      </button>
-      {/* ... footer parts ... */}
-    </form>
+          {/* 4. MAIN ACTION BUTTON */}
+          <button 
+            disabled={loading} 
+            style={{ backgroundColor: brandConfig.primaryColor }} 
+            className="w-full py-4 text-white rounded-xl font-bold shadow-lg hover:brightness-110 transition mt-4"
+          >
+            {loading ? 'Processing...' : mode === 'signup' ? 'Sign Up' : mode === 'login' ? 'Login' : 'Send Reset Link'}
+          </button>
+
+          {/* 5. TOGGLE BETWEEN LOGIN AND SIGNUP */}
+          <div className="text-center mt-6">
+            <button 
+              type="button" 
+              onClick={() => setMode(mode === 'login' ? 'signup' : 'login')} 
+              className="text-sm text-gray-500 hover:underline font-medium"
+            >
+              {mode === 'login' ? "Don't have an account? Sign Up" : "Already have an account? Login"}
+            </button>
+          </div>
+          
+          {/* Back button for Forgot Mode */}
+          {mode === 'forgot' && (
+            <button 
+              type="button" 
+              onClick={() => setMode('login')} 
+              className="w-full text-center text-xs text-gray-400 mt-2 hover:underline"
+            >
+              Back to Login
+            </button>
+          )}
+        </form>
       </div>
     </div>
   );
