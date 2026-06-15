@@ -12,29 +12,38 @@ export default function Auth() {
   
   const navigate = useNavigate();
 
-  const handleAuth = async (e) => {
-  e.preventDefault();
-  setLoading(true);
-  try {
-    if (isSignUp) {
-      const { error } = await supabase.auth.signUp({
-        email, password,
-        options: { data: { full_name: fullName, brand_name: brandConfig.name } }
-      });
-      if (error) throw error;
-      alert("Success! Check your email or try logging in.");
-    } else {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) throw error;
-      navigate('/');
+ const handleAuth = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    
+    // Safety check: Is the client even loaded?
+    if (!supabase) {
+      alert("Database connection not initialized.");
+      setLoading(false);
+      return;
     }
-  } catch (error) {
-    console.error("Auth Error:", error.message);
-    alert(error.message);
-  } finally {
-    setLoading(false); // This stops the "Processing" hang
-  }
-};
+
+    try {
+      if (isSignUp) {
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: { data: { full_name: fullName, brand_name: brandConfig.name } }
+        });
+        if (error) throw error;
+        alert("Check your email for confirmation!");
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+        navigate('/');
+      }
+    } catch (error) {
+      console.error("Auth Error:", error.message);
+      alert(error.message);
+    } finally {
+      setLoading(false); // This stops the "Processing" hang
+    }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
@@ -48,47 +57,41 @@ export default function Auth() {
         </div>
 
         <form onSubmit={handleAuth} className="p-8 space-y-4">
-          {isSignUp && (
-            <input 
-              type="text" placeholder="Full Name" required 
-              className="w-full p-3 border rounded-xl focus:outline-none"
-              style={{ borderColor: brandConfig.primaryColor }}
-              onChange={(e) => setFullName(e.target.value)}
-            />
-          )}
-          <input 
-            type="email" placeholder="Email Address" required 
-            className="w-full p-3 border rounded-xl focus:outline-none"
-            style={{ borderColor: brandConfig.primaryColor }}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-          <input 
-            type="password" placeholder="Password" required 
-            className="w-full p-3 border rounded-xl focus:outline-none"
-            style={{ borderColor: brandConfig.primaryColor }}
-            onChange={(e) => setPassword(e.target.value)}
-          />
+      {isSignUp && (
+        <input 
+          id="full_name" // Added ID
+          name="full_name" // Added Name
+          type="text" placeholder="Full Name" required 
+          className="w-full p-3 border rounded-xl"
+          onChange={(e) => setFullName(e.target.value)}
+        />
+      )}
+      <input 
+        id="email" // Added ID
+        name="email" // Added Name
+        type="email" placeholder="Email Address" required 
+        className="w-full p-3 border rounded-xl"
+        autoComplete="email"
+        onChange={(e) => setEmail(e.target.value)}
+      />
+      <input 
+        id="password" // Added ID
+        name="password" // Added Name
+        type="password" placeholder="Password" required 
+        className="w-full p-3 border rounded-xl"
+        autoComplete="current-password"
+        onChange={(e) => setPassword(e.target.value)}
+      />
 
-          <button 
-            disabled={loading}
-            style={{ backgroundColor: brandConfig.primaryColor }}
-            className="w-full py-4 text-white rounded-xl font-bold shadow-lg hover:brightness-110 transition"
-          >
-            {loading ? 'Processing...' : isSignUp ? 'Sign Up' : 'Login'}
-          </button>
-
-          <p className="text-center text-gray-500 text-sm mt-4">
-            {isSignUp ? "Already have an account?" : "Don't have an account?"}
-            <button 
-              type="button"
-              onClick={() => setIsSignUp(!isSignUp)}
-              style={{ color: brandConfig.primaryColor }}
-              className="ml-2 font-bold hover:underline"
-            >
-              {isSignUp ? 'Login' : 'Create one'}
-            </button>
-          </p>
-        </form>
+      <button 
+        disabled={loading}
+        style={{ backgroundColor: brandConfig.primaryColor }}
+        className="w-full py-4 text-white rounded-xl font-bold disabled:opacity-50"
+      >
+        {loading ? 'Connecting to Server...' : isSignUp ? 'Sign Up' : 'Login'}
+      </button>
+      {/* ... footer parts ... */}
+    </form>
       </div>
     </div>
   );
