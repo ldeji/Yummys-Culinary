@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { brandConfig } from '../config/brands';
 import { supabase } from '../config/supabaseClient';
+import SEO from '../components/SEO'; // Import the SEO component
 
 export default function Menu({ addToCart }) {
   const [items, setItems] = useState([]);
@@ -15,11 +16,11 @@ export default function Menu({ addToCart }) {
   useEffect(() => {
     async function fetchProducts() {
       setLoading(true);
-      const currentBrandID = import.meta.env.VITE_BRAND || 'yummys'; // SAFETY CHECK: Ensure this environment variable is set correctly
+      const currentBrandID = import.meta.env.VITE_BRAND || 'yummys'; 
       const { data, error } = await supabase  
-        .from('products') // Make sure this matches your actual table name
-        .select('*')  // SAFETY CHECK: Ensure currentBrandID is valid before querying
-        .eq('brand_id', currentBrandID); // SAFETY CHECK: Ensure brand_id column exists and is indexed for performance
+        .from('products') 
+        .select('*')  
+        .eq('brand_id', currentBrandID); 
 
       if (error) {
         console.error("Error fetching products:", error.message);
@@ -40,15 +41,14 @@ export default function Menu({ addToCart }) {
   const getImageUrl = (url) => {
     if (!url) return "https://via.placeholder.com/150";
 
-  // If the image is a full URL from a Supabase upload
-  if (url.includes('supabase.co')) return url;
+    // If the image is a full URL from a Supabase upload
+    if (url.includes('supabase.co')) return url;
 
-  // If it's just a local filename (like 'Amala.jpg')
-  // We determine the folder based on the brand
-  const currentBrand = import.meta.env.VITE_BRAND || 'yummys';
-  const folder = currentBrand === 'pantry-co' ? 'pantry' : 'yummys';
+    // If it's just a local filename (like 'Amala.jpg')
+    const currentBrand = import.meta.env.VITE_BRAND || 'yummys';
+    const folder = currentBrand === 'pantry-co' ? 'pantry' : 'yummys';
 
-  return `/images/${folder}/${url}`;
+    return `/images/${folder}/${url}`;
   };
 
   if (loading) {
@@ -62,6 +62,15 @@ export default function Menu({ addToCart }) {
   return (
     <section style={{ backgroundColor: brandConfig?.backColor || '#ffffff' }} className="p-10 max-w-7xl mx-auto min-h-screen">
       
+      {/* --- SEO COMPONENT --- */}
+      <SEO 
+        title={brandConfig.name === "Yummys" ? "Our Menu" : "Product Catalog"} 
+        description={brandConfig.name === "Yummys" 
+          ? `Explore the full menu at ${brandConfig.name}. From local favorites to grilled delicacies, find your next meal here.` 
+          : `Browse the premium selection at ${brandConfig.name}. Quality imported dry goods, snacks, and essentials for your home.`
+        } 
+      />
+
       {searchQuery && (
         <div className="mb-10 text-center">
           <h2 className="text-2xl font-bold">Results for: <span style={{ color: brandConfig.primaryColor }}>"{searchQuery}"</span></h2>
@@ -87,7 +96,6 @@ export default function Menu({ addToCart }) {
             <div key={item.id} className="bg-white rounded-xl shadow-lg overflow-hidden flex flex-col border border-gray-100">
               <div onClick={() => setSelectedItem(item)} className="cursor-pointer">
                 <div className="w-full h-48 bg-gray-50 flex items-center justify-center p-6">
-                  {/* FIXED IMAGE LOGIC */}
                   <img 
                     src={getImageUrl(item.image_url)} 
                     alt={item.name} 
@@ -98,7 +106,7 @@ export default function Menu({ addToCart }) {
                 <div className="p-4">
                   <div className="flex justify-between items-start mb-1">
                     <h3 className="font-bold text-lg text-gray-800 leading-tight">{item.name}</h3>
-                    <span style={{ color: brandConfig.lightColor }} className="font-bold ml-2">
+                    <span style={{ color: brandConfig.accentColor }} className="font-bold ml-2">
                       ₦{item.price?.toLocaleString()}
                     </span>
                   </div>
@@ -129,7 +137,6 @@ export default function Menu({ addToCart }) {
             <button onClick={() => setSelectedItem(null)} className="absolute top-4 right-4 bg-white rounded-full p-2 shadow-md z-10">✕</button>
 
             <div className="w-full md:w-1/2 h-64 md:h-auto bg-gray-100 flex items-center justify-center p-6">
-              {/* FIXED MODAL IMAGE LOGIC */}
               <img 
                 src={getImageUrl(selectedItem.image_url)} 
                 alt={selectedItem.name} 
@@ -150,7 +157,6 @@ export default function Menu({ addToCart }) {
               </h4>
 
               <div className="flex flex-wrap gap-2 mb-8">
-                {/* SAFETY CHECK: Check if ingredients exists AND if it is an array */}
                 {Array.isArray(selectedItem.ingredients) ? (
                   selectedItem.ingredients.map((ing, index) => (
                     <span 
@@ -162,7 +168,6 @@ export default function Menu({ addToCart }) {
                     </span>
                   ))
                 ) : (
-                  /* Fallback: If it's just a plain string, just show the string */
                   <span className="text-gray-600 text-sm">
                     {selectedItem.ingredients || "No details provided"}
                   </span>
