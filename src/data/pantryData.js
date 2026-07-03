@@ -111,10 +111,10 @@ export const pantryItems = [
 
 // These are the upsell items that will be shown in the cart modal. It's different from the main pantry items.
 export const pantryUpsells = [
-  { id: 51, name: "Thyme Jar", price: 18000, image: "ThymeLeaves.png" },
-  { id: 52, name: "Curry Powder", price: 13000, image: "CurryPowder.png" },
-  { id: 53, name: "Colgate Optic White", price: 9000, image: "Colgate.png" },
-  { id: 54, name: "Multi purpose Cleaner", price: 15000, image: "Fabuloso.png" },
+  { id: 51, name: "Thyme Jar", price: 18000, image: "ThymeLeaves.webp" },
+  { id: 52, name: "Curry Powder", price: 13000, image: "CurryPowder.webp" },
+  { id: 53, name: "Colgate Optic White", price: 9000, image: "Colgate.webp" },
+  { id: 54, name: "Multi purpose Cleaner", price: 15000, image: "Fabuloso.webp" },
   
 ];
 
