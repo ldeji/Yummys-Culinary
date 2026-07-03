@@ -254,9 +254,18 @@ const handleCheckout = () => {
       </a>
     </li>
         <li>
-          <a href="https://wa.me/2348057080703" className="flex items-center gap-4 group transition">
+          <a 
+            href={`https://wa.me/${brandConfig.whatsapp}`} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="flex items-center gap-4 group transition"
+          >
             <FaWhatsapp className="text-2xl text-green-500 group-hover:scale-120 transition-transform" />
-            <span className="group-hover:underline">+234 805 708 0703</span>
+            
+            {/* Displays the number with a '+' in front of it */}
+            <span className="group-hover:underline font-medium">
+              +{brandConfig.whatsapp}
+            </span>
           </a>
         </li>
         <li>
@@ -294,6 +303,7 @@ const handleCheckout = () => {
         <p className="text-xs opacity-50 uppercase tracking-widest">
           &copy; {new Date().getFullYear()} {brandConfig.name}. All Rights Reserved.
         </p>
+        <p className="text-xs opacity-50 uppercase tracking-widest">Built by Lateef Peleowo</p>
       </div>
     </footer>
 

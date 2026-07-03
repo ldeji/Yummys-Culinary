@@ -2,8 +2,16 @@ import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { brandConfig } from '../config/brands';
 import SEO from '../components/SEO'; // Import the SEO component
+import { FaWhatsapp } from 'react-icons/fa';
 
 export default function Home() {
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+useEffect(() => {
+  const handleResize = () => setIsMobile(window.innerWidth < 768);
+  window.addEventListener('resize', handleResize);
+  return () => window.removeEventListener('resize', handleResize);
+}, []);
   const [currentIndex, setCurrentIndex] = useState(0)
   const navigate = useNavigate();
 
@@ -21,7 +29,9 @@ export default function Home() {
 
   return (
     <div 
-      style={{ backgroundColor: brandConfig.backColor }}
+       style={{ 
+        background: `linear-gradient(${isMobile ? 'to bottom' : 'to right'}, ${brandConfig.newColor} 55%, #dde8ff 100%)` 
+      }}
       className="min-h-[85vh] flex items-center justify-center px-4 overflow-hidden"
     >
       {/* --- SEO COMPONENT --- */}
@@ -122,6 +132,26 @@ export default function Home() {
         </div>
 
       </div>
+
+      {/* --- FLOATING WHATSAPP BUTTON --- */}
+    <a
+       href={`https://wa.me/${brandConfig.whatsapp}`}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="fixed bottom-8 right-8 z-[100] flex items-center justify-center group"
+    >
+      {/* Optional Tooltip: Appears on hover */}
+      <span className="absolute right-16 bg-white text-gray-800 text-xs font-bold px-3 py-2 rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap border border-gray-100">
+        Chat with us! 👋
+      </span>
+
+      {/* The Icon Circle */}
+      <div 
+        className="bg-[#25D366] text-white p-4 rounded-full shadow-2xl animate-bounce hover:animate-none hover:scale-110 transition-all duration-300"
+      >
+        <FaWhatsapp size={32} />
+      </div>
+    </a>
     </div>
   );
 }

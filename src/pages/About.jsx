@@ -110,19 +110,46 @@ export default function About (){
         </div>
       </section>
 
-      {/* --- CTA SECTION --- */}
-      <section className="py-20 text-center px-4">
-        <h2 className="text-3xl font-bold mb-6">
-          {brandConfig.name === "Yummys" ? "Ready to taste the difference?" : "Join Our Community!"}</h2>
+      {/* --- CTA SECTION WITH BACKGROUND IMAGE --- */}
+    <section className="relative py-32 text-center px-4 overflow-hidden shadow-2xl">
+      
+      {/* 1. The Background Image */}
+      <div className="absolute inset-0 z-0">
+        <img 
+          src={brandConfig.ctaImage} 
+          alt="Happy Customers" 
+          className="w-full h-full object-cover"
+        />
+        {/* 2. The Dark Overlay (Makes text readable) */}
+        <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px]"></div>
+      </div>
+
+      {/* 3. The Content (Must be z-10 to stay on top of image) */}
+      <div className="relative z-10 max-w-3xl mx-auto">
+        <h2 className="text-4xl md:text-5xl font-extrabold mb-8 text-white tracking-tight">
+          {brandConfig.name === "Yummys" 
+            ? "Ready to taste the difference?" 
+            : "Join our community of food lovers!"}
+        </h2>
+        
+        <p className="text-gray-200 text-lg mb-10 opacity-90">
+            {brandConfig.name === "Yummys"
+              ? "Join thousands of happy foodies enjoying hot meals daily."
+              : "Get access to the freshest global ingredients and exclusive deals."}
+        </p>
+
         <Link to="/menu">
           <button 
-          style={{ backgroundColor: brandConfig.primaryColor }}
-          className=" text-white px-10 py-4 rounded-full text-lg font-bold hover:brightness-125 transition shadow-lg hover:scale-95">
-            Order Now <span className="text-3xl">
-              {brandConfig.name === "Yummys" ? "🍴" : "🌾"}</span>
+            style={{ backgroundColor: brandConfig.primaryColor }}
+            className="text-white px-12 py-5 rounded-full text-xl font-bold hover:brightness-110 transition-all shadow-2xl hover:scale-105 active:scale-95"
+          >
+            Order Now <span className="ml-2">
+              {brandConfig.name === "Yummys" ? "🍴" : "🌾"}
+            </span>
           </button>
         </Link>
-      </section>
+      </div>
+    </section>
 
     </div>
     )

@@ -12,12 +12,15 @@ const brands = {
     items: yummysItems, // Attach the restaurant data
     upsells: yummysUpsells, // Attach the upsell data
     aboutImage: "/images/yummys/cheffo.jpeg",
+    ctaImage: "https://images.unsplash.com/photo-1552566626-52f8b828add9?w=1200", // People eating
+    whatsapp: "2348057080703", // added WhatsApp number for Yummys
     paystackKey: "pk_test_f5cf2aa44a08c1cf4af8e848b3967cce5285c637", // Add your key here
     currency: "NGN",
     primaryColor: "#EAB308", // yellow-500
     lightColor: "#EAB308",   // yellow-500
     accentColor: "#E5E7EB",  // gray-200
     backColor: "#111827", // dark-gray-900
+    newColor: "blue", // dark-gray-900
      heroImages: [
       { id: 1, img: "/images/yummys/Amala.webp", blob: "#FDE047" },
       { id: 2, img: "/images/yummys/Abacha.webp", blob: "#FDE047" },
@@ -34,10 +37,13 @@ const brands = {
     items: pantryItems,
     upsells: pantryUpsells,
     aboutImage: "/images/pantry/PantryCollection.webp",
+    ctaImage: "https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=1200", // People cooking
     primaryColor:  "#4a6d43", // green-700
     lightColor: "#d40785",   // fushia
     accentColor: "#c5a47f",  // peach
     backColor: "#24150f", // dark-brown
+    newColor: "#24150f", // green-300
+    whatsapp: "2348096528487", // added WhatsApp number for Pantry & Co.
     paystackKey: "pk_test_f5cf2aa44a08c1cf4af8e848b3967cce5285c637", // Add your key here
     currency: "NGN",
      heroImages: [
