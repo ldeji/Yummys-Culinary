@@ -13,22 +13,36 @@ export default function Menu({ addToCart }) {
   const navigate = useNavigate();
   const searchQuery = searchParams.get("search")?.toLowerCase() || "";
 
-  useEffect(() => {
+useEffect(() => {
     async function fetchProducts() {
       setLoading(true);
-      const currentBrandID = import.meta.env.VITE_BRAND || 'yummys'; 
-      const { data, error } = await supabase  
-        .from('products') 
-        .select('*')  
-        .eq('brand_id', currentBrandID); 
+      try {
+        const currentBrandID = import.meta.env.VITE_BRAND || 'yummys';
+        
+        const { data, error } = await supabase  
+          .from('products') 
+          .select('*')  
+          .eq('brand_id', currentBrandID); 
 
-      if (error) {
-        console.error("Error fetching products:", error.message);
-      } else {
+        if (error) throw error; // Force the code to jump to the catch block if there's an error
+
         setItems(data || []);
+      } catch (error) {
+        console.error("Critical Error:", error.message);
+        
+        // If the error message contains 'fetch', it's usually a DNS/Paused project issue
+        if (error.message.includes('fetch')) {
+          alert("The store server is currently waking up. Please refresh the page in a few seconds!");
+        } else {
+          alert("Could not load products. Please check your internet connection.");
+        }
+        
+        setItems([]); // Ensure items is at least an empty array so the app doesn't crash
+      } finally {
+        setLoading(false); // This always runs, even if the code fails
       }
-      setLoading(false);
     }
+
     fetchProducts();
   }, []);
 
@@ -106,7 +120,7 @@ export default function Menu({ addToCart }) {
                 <div className="p-4">
                   <div className="flex justify-between items-start mb-1">
                     <h3 className="font-bold text-lg text-gray-800 leading-tight">{item.name}</h3>
-                    <span style={{ color: brandConfig.accentColor }} className="font-bold ml-2">
+                    <span style={{ color: brandConfig.lightColor }} className="font-bold ml-2">
                       ₦{item.price?.toLocaleString()}
                     </span>
                   </div>
