@@ -13,12 +13,18 @@ export default function Orders({ user }) {
     }
   }, [user]);
 
-  async function fetchOrders() {
+ async function fetchOrders() {
     setLoading(true);
-    // Supabase RLS will ensure the user only sees their own rows
+    
+    // Get the current site's brand (yummys or pantry-co)
+    const currentBrand = import.meta.env.VITE_BRAND || 'yummys';
+
+    // THE FIX: We filter by user_id AND brand_id
     const { data, error } = await supabase
       .from('orders')
       .select('*')
+      .eq('user_id', user.id)           // Only MY orders
+      .eq('brand_id', currentBrand)     // Only for THIS brand
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -65,6 +71,27 @@ export default function Orders({ user }) {
                   <p className="text-xs text-gray-400 uppercase font-bold">Date</p>
                   <p className="text-sm">{new Date(order.created_at).toLocaleDateString()}</p>
                 </div>
+
+              <div className="flex justify-between items-center mb-4 border-b pb-4">
+              <div>
+                <p className="text-xs text-gray-400 uppercase font-bold">Order ID</p>
+                <p className="text-sm font-mono">{order.id.slice(0, 8)}...</p>
+              </div>
+              
+              <div className="text-right flex flex-col items-end gap-2">
+                {/* --- LIVE STATUS BADGE FOR CUSTOMER --- */}
+                <span 
+                  className={`text-[10px] font-bold px-3 py-1 rounded-full uppercase
+                    ${order.status === 'Completed' ? 'bg-green-100 text-green-700' : 
+                      order.status === 'Out for Delivery' ? 'bg-blue-100 text-blue-700' : 
+                      order.status === 'Preparing' ? 'bg-orange-100 text-orange-700' : 'bg-yellow-100 text-yellow-700'}
+                  `}
+                >
+                  {order.status || 'Processing'}
+                </span>
+                <p className="text-xs text-gray-500">{new Date(order.created_at).toLocaleDateString()}</p>
+              </div>
+            </div>
               </div>
 
               {/* List of items in this order */}

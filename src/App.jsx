@@ -81,16 +81,14 @@ function App() {
   // --- PAYSTACK & CHECKOUT ---
   // 1. Create a separate function to handle the database part
 const saveOrderToDatabase = async (response, amount) => {
-  console.log("Saving order... Checking for reference:", response.reference);
-  
-  // Create the object exactly
   const newOrder = {
     user_id: user.id,
     items: cart,
     total_amount: amount,
+    // Ensure this line is exactly like this:
     brand_id: import.meta.env.VITE_BRAND || 'yummys',
-    payment_reference: response.reference, // Check this matches Step 2
-    status: "paid"
+    payment_reference: response.reference,
+    status: "Paid"
   };
 
   const { data, error } = await supabase
@@ -99,12 +97,12 @@ const saveOrderToDatabase = async (response, amount) => {
 
   if (error) {
     console.error("FULL ERROR OBJECT:", error);
-    
+
     // If it still fails, let's try a fallback column name just in case
     if (error.message.includes("payment_reference")) {
-       alert("Database Error: The column 'payment_reference' isn't recognized. Please check Step 2 again!");
+      alert("Database Error: The column 'payment_reference' isn't recognized. Please check Step 2 again!");
     } else {
-       alert("Error: " + error.message);
+      alert("Error: " + error.message);
     }
   } else {
     alert("Order Placed Successfully!");

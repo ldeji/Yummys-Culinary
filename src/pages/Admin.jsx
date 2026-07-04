@@ -11,6 +11,7 @@ export default function Admin({ user }) {
   const [uploading, setUploading] = useState(false);
   const [editingId, setEditingId] = useState(null); 
   const navigate = useNavigate();
+  const [userProfile, setUserProfile] = useState(null);
 
   const [newProduct, setNewProduct] = useState({
     name: '', price: '', description: '', long_description: '', image_url: '', ingredients: ''
@@ -55,43 +56,44 @@ async function checkAdmin() {
 }
 
 async function fetchData() {
-  setLoading(true);
-  try {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('brand_id, role')
-      .eq('id', user.id)
-      .single();
+    setLoading(true);
+    try {
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('brand_id, role')
+        .eq('id', user.id)
+        .single();
 
-    const isSuperAdmin = profile?.brand_id === 'all';
-    
-    // FIX FOR ISSUE 1:
-    // If not super admin, we use the brand assigned to the USER, 
-    // not the brand assigned to the website.
-    const userAuthorizedBrand = profile?.brand_id;
+      if (profileError) throw profileError;
 
-    let productQuery = supabase.from('products').select('*');
-    let orderQuery = supabase.from('orders').select('*');
+      // SAVE TO STATE SO JSX CAN SEE IT
+      setUserProfile(profileData); 
 
-    if (!isSuperAdmin) {
-      // Strictly filter by the admin's assigned brand
-      productQuery = productQuery.eq('brand_id', userAuthorizedBrand);
-      orderQuery = orderQuery.eq('brand_id', userAuthorizedBrand);
+      const isSuperAdmin = profileData?.brand_id === 'all';
+      const currentSiteBrand = import.meta.env.VITE_BRAND || 'yummys';
+
+      let productQuery = supabase.from('products').select('*');
+      let orderQuery = supabase.from('orders').select('*');
+
+      if (!isSuperAdmin) {
+        productQuery = productQuery.eq('brand_id', profileData?.brand_id);
+        orderQuery = orderQuery.eq('brand_id', profileData?.brand_id);
+      }
+
+      const [prodRes, ordRes] = await Promise.all([
+        productQuery,
+        orderQuery.order('created_at', { ascending: false })
+      ]);
+
+      setProducts(prodRes.data || []);
+      setOrders(ordRes.data || []);
+
+    } catch (error) {
+      console.error(error.message);
+    } finally {
+      setLoading(false);
     }
-
-    const [prodRes, ordRes] = await Promise.all([
-      productQuery,
-      orderQuery.order('created_at', { ascending: false })
-    ]);
-
-    setProducts(prodRes.data || []);
-    setOrders(ordRes.data || []);
-  } catch (error) {
-    console.error(error.message);
-  } finally {
-    setLoading(false);
   }
-}
 
   // IMAGE HELPER
 const getImageUrl = (product) => {
@@ -259,36 +261,71 @@ return (
         </div>
       )}
 
-      {/* --- ORDERS TAB --- */}
-      {activeTab === 'orders' && (
-        <div className="max-w-4xl mx-auto space-y-6 animate-fade-in">
-          <h3 className="font-bold text-gray-400 uppercase text-sm mb-4">Recent Transactions</h3>
-          {orders.length === 0 ? (
-            <p className="text-center py-20 text-gray-400">No orders found.</p>
-          ) : (
-            orders.map(o => (
-              <div key={o.id} className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex flex-col md:flex-row justify-between">
-                <div className="flex-1">
-                  <p className="text-sm font-mono text-gray-400 mb-2">Order ID: {o.id.toString().slice(0,8)}</p>
-                  {/* BRAND LABEL FOR ORDERS (Shows which site the order came from) */}
-                  <span className="text-[10px] px-2 py-0.5 rounded bg-gray-100 text-gray-500 uppercase font-bold mb-2 inline-block">
-                    Source: {o.brand_id}
-                  </span>
-                  <div className="space-y-1">
-                    {o.items.map((item, i) => (
-                      <p key={i} className="text-sm text-gray-700"><span className="font-bold" style={{ color: brandConfig.primaryColor }}>{item.quantity}x</span> {item.name}</p>
-                    ))}
-                  </div>
-                </div>
-                <div className="mt-6 md:mt-0 md:text-right">
-                  <p className="text-2xl font-black" style={{ color: brandConfig.primaryColor }}>₦{o.total_amount.toLocaleString()}</p>
-                  <p className="text-xs text-gray-400">{new Date(o.created_at).toLocaleString()}</p>
-                </div>
-              </div>
-            ))
-          )}
+     {/* --- UPDATED ORDERS TAB IN ADMIN.JSX --- */}
+{activeTab === 'orders' && (
+  <div className="max-w-4xl mx-auto space-y-6 animate-fade-in">
+    <h3 className="font-bold text-gray-400 uppercase text-sm mb-4 tracking-widest">Recent Transactions</h3>
+    {orders.map(o => (
+      <div key={o.id} className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex flex-col md:flex-row justify-between gap-6">
+        <div className="flex-1">
+          <div className="flex items-center gap-3 mb-3">
+            {/* Status Badge */}
+            <span 
+              className={`text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-tighter shadow-sm
+                ${o.status === 'Completed' ? 'bg-green-100 text-green-700' : 
+                  o.status === 'Out for Delivery' ? 'bg-blue-100 text-blue-700' : 
+                  o.status === 'Preparing' ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-700'}
+              `}
+            >
+              {o.status || 'Paid'}
+            </span>
+            <p className="text-sm font-mono text-gray-400">ID: {o.id.toString().slice(0,8)}</p>
+          </div>
+          
+          <div className="space-y-1 mb-4">
+            {o.items.map((item, i) => (
+              <p key={i} className="text-sm text-gray-700">
+                <span className="font-bold" style={{ color: brandConfig.primaryColor }}>{item.quantity}x</span> {item.name}
+              </p>
+            ))}
+          </div>
+
+          {/* STATUS UPDATE DROPDOWN */}
+          <div className="mt-4 pt-4 border-t border-gray-50">
+            <p className="text-[10px] font-bold text-gray-400 uppercase mb-2">Update Progress:</p>
+            <select 
+              value={o.status || 'Paid'}
+              onChange={async (e) => {
+                const newStatus = e.target.value;
+                const { error } = await supabase.from('orders').update({ status: newStatus }).eq('id', o.id);
+                if (!error) fetchData(); // Refresh list to show change
+                else alert("Failed to update status");
+              }}
+              className="bg-gray-50 border border-gray-200 text-sm rounded-lg p-2 focus:outline-none cursor-pointer hover:border-gray-400 transition"
+            >
+              <option value="Paid">Paid (New)</option>
+              <option value="Preparing">Preparing</option>
+              <option value="Out for Delivery">Out for Delivery</option>
+              <option value="Completed">Completed</option>
+              <option value="Cancelled">Cancelled</option>
+            </select>
+          </div>
         </div>
-      )}
+        
+        <div className="md:text-right flex flex-col justify-between items-end">
+          <p className="text-xs text-gray-400">{new Date(o.created_at).toLocaleString()}</p>
+          <div>
+            <p className="text-2xl font-black" style={{ color: brandConfig.primaryColor }}>₦{o.total_amount.toLocaleString()}</p>
+            <p className="text-[10px] text-gray-300 font-mono">REF: {o.payment_reference}</p>
+            {userProfile?.brand_id === 'all' && (
+               <span className="text-[9px] bg-gray-100 px-2 py-0.5 rounded text-gray-400 uppercase font-bold">{o.brand_id}</span>
+            )}
+          </div>
+        </div>
+      </div>
+    ))}
+  </div>
+)}
 
       {/* --- ANALYTICS TAB --- */}
       {activeTab === 'analytics' && (

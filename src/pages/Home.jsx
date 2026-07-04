@@ -30,7 +30,7 @@ useEffect(() => {
   return (
     <div 
        style={{ 
-        background: `linear-gradient(${isMobile ? 'to bottom' : 'to right'}, ${brandConfig.newColor} 55%, #dde8ff 100%)` 
+        background: `linear-gradient(${isMobile ? 'to bottom' : 'to right'}, ${brandConfig.newColor} 65%, #dde8ff 100%)` 
       }}
       className="min-h-[85vh] flex items-center justify-center px-4 overflow-hidden"
     >
