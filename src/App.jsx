@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Link } from 'react-router-dom'
 import Navbar from './components/Navbar'; 
 import Home from './pages/Home'
 import Menu from './pages/Menu'
+import Profile from './pages/Profile'
 import About from './pages/About'
 import { brandConfig } from "./config/brands";
 import ScrollToTop from "./components/ScrollToTop";
@@ -111,37 +112,74 @@ const saveOrderToDatabase = async (response, amount) => {
   }
 };
 
-// 2. The Updated handleCheckout (Pure Function for Paystack)
-const handleCheckout = () => {
-  if (cart.length === 0) return alert("Cart is empty!");
-  
+// 2. The Updated handleCheckout (Pure Function for Paystack) and now it calls saveOrderToDatabase
+const handleCheckout = async () => {
+  console.log("1. Checkout initiated...");
+
+  if (cart.length === 0) {
+    alert("Your cart is empty!");
+    return;
+  }
+
   if (!user) {
     alert("Please login to place an order.");
     window.location.href = "/login";
     return;
   }
 
-  if (!window.PaystackPop) {
-    alert("Payment system is loading... please refresh.");
-    return;
-  }
+  try {
+    console.log("2. Fetching profile for user:", user.id);
+    
+    // Fetch profile (We don't use .single() here to prevent crashing if empty)
+    const { data: profiles, error } = await supabase
+      .from('profiles')
+      .select('phone, address, full_name')
+      .eq('id', user.id);
 
-  // We use a regular function here (no 'async' keyword)
-  const handler = window.PaystackPop.setup({
-    key: brandConfig.paystackKey,
-    email: user.email,
-    amount: Math.round(cartTotal * 100),
-    currency: "NGN",
-    callback: function(response) {
-      // We call our async database function from here
-      saveOrderToDatabase(response, cartTotal);
-    },
-    onClose: function() {
-      console.log("User closed payment window");
+    if (error) throw error;
+
+    const profile = profiles[0]; // Get the first result if it exists
+
+    // 3. Safety Check: Do they have a phone and address?
+    if (!profile?.phone || !profile?.address) {
+      console.log("3. Profile incomplete");
+      alert("Please update your Phone Number and Delivery Address in your Profile before ordering!");
+      window.location.href = "/profile";
+      return;
     }
-  });
 
-  handler.openIframe();
+    console.log("4. Profile found, opening Paystack...");
+
+    if (!window.PaystackPop) {
+      alert("Paystack is still loading. Please wait a moment and try again.");
+      return;
+    }
+
+    const handler = window.PaystackPop.setup({
+      key: brandConfig.paystackKey,
+      email: user.email,
+      amount: Math.round(cartTotal * 100),
+      currency: "NGN",
+      metadata: {
+        custom_fields: [
+          { display_name: "Customer Name", variable_name: "customer_name", value: profile.full_name },
+          { display_name: "Phone", variable_name: "customer_phone", value: profile.phone },
+          { display_name: "Address", variable_name: "delivery_address", value: profile.address }
+        ]
+      },
+      callback: function(response) {
+        // This calls your existing function that clears cart and saves to DB
+        saveOrderToDatabase(response, cartTotal);
+      },
+      onClose: () => console.log("Payment window closed")
+    });
+
+    handler.openIframe();
+
+  } catch (err) {
+    console.error("Checkout Error:", err.message);
+    alert("Something went wrong with the checkout. Please try again.");
+  }
 };
 
   return (
@@ -159,6 +197,7 @@ const handleCheckout = () => {
             <Route path="/orders" element={<Orders user={user} />} />
             <Route path="/admin" element={<Admin user={user} />} />
             <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/profile" element={<Profile user={user} />} />
           </Routes>
         </main>
 

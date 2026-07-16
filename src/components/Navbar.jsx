@@ -115,7 +115,8 @@ export default function Navbar({ cartCount, setIsCartOpen, user }) {
             <div className="flex items-center gap-3">
               {/* AUTH SECTION */}
               {user && (
-                <Link to="/orders" className="text-sm font-bold text-gray-600 hover:opacity-70">
+                
+                <Link to="/orders" className="text-sm font-bold" hover:opacity-70 transition style={{ color: brandConfig.primaryColor }}>
                   My Orders
                 </Link>
               )}
@@ -131,21 +132,34 @@ export default function Navbar({ cartCount, setIsCartOpen, user }) {
               )}
 
               {user ? (
-                <button 
-                  onClick={handleLogout}
-                  className="text-gray-600 text-sm font-bold hover:text-red-500 transition-colors"
-                >
-                  Logout
-                </button>
-              ) : (
-                <Link 
-                  to="/login" 
-                  style={{ color: brandConfig.primaryColor }}
-                  className="font-bold text-sm"
-                >
-                  Login
-                </Link>
-              )}
+          <div className="flex items-center gap-3 md:gap-4">
+            
+            {/* 1. Profile Link (Visible to everyone logged in) */}
+            <Link 
+              to="/profile" 
+              className="text-sm font-bold" 
+              style={{ color: brandConfig.primaryColor }}
+            >
+              Profile
+            </Link>
+
+            {/* 4. Logout Button */}
+            <button 
+              onClick={handleLogout}
+              className="text-gray-600 text-sm font-bold hover:text-red-500 transition-colors border-l pl-3 md:pl-4 border-gray-200"
+            >
+              Logout
+            </button>
+          </div>
+          ) : (
+            <Link 
+              to="/login" 
+              style={{ color: brandConfig.primaryColor }}
+              className="font-bold text-sm"
+            >
+              Login
+            </Link>
+          )}
 
               {/* Cart Button */}
               <button 

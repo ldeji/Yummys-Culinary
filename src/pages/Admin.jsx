@@ -173,22 +173,34 @@ const getImageUrl = (product) => {
     }
   }
 
-     // --- ANALYTICS CALCULATIONS ---
-const totalRevenue = orders.reduce((sum, order) => sum + (order.total_amount || 0), 0);
-const totalOrders = orders.length;
-const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+// --- 1. CALCULATE REVENUE & BREAKDOWN ---
+ const totalRevenue = orders.reduce((sum, order) => sum + (Number(order.total_amount) || 0), 0);
+  const totalOrders = orders.length;
+  const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
-// Find Top Selling Products
-const productSales = {};
-orders.forEach(order => {
-  order.items.forEach(item => {
-    productSales[item.name] = (productSales[item.name] || 0) + item.quantity;
+  // We calculate the breakdown regardless of who is logged in, 
+  // but we will hide it in the UI if they aren't the Super Admin.
+  const revenueByBrand = {};
+  const productSales = {};
+
+  orders.forEach(order => {
+    // 1. Group Revenue by Brand
+    const bId = order.brand_id || 'Unknown';
+    revenueByBrand[bId] = (revenueByBrand[bId] || 0) + (Number(order.total_amount) || 0);
+
+    // 2. Group Sales by Product Name
+    const items = Array.isArray(order.items) ? order.items : [];
+    items.forEach(item => {
+      productSales[item.name] = (productSales[item.name] || 0) + (item.quantity || 1);
+    });
   });
-});
 
-const topProducts = Object.entries(productSales)
-  .sort((a, b) => b[1] - a[1])
-  .slice(0, 5); // Get top 5
+  const topProducts = Object.entries(productSales)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5);
+
+  // Define isSuperAdmin clearly based on the profile state
+  const isSuperAdmin = userProfile?.brand_id === 'all';
 
   if (loading) return <div className="p-20 text-center">Loading Dashboard...</div>;
 
@@ -327,28 +339,64 @@ return (
   </div>
 )}
 
-      {/* --- ANALYTICS TAB --- */}
-      {activeTab === 'analytics' && (
-        <div className="space-y-8 animate-fade-in">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100">
-              <p className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-2">Total Revenue</p>
-              <h2 className="text-4xl font-black" style={{ color: brandConfig.primaryColor }}>₦{totalRevenue.toLocaleString()}</h2>
-              <p className="text-xs text-gray-400 mt-1">Combined Brand Earnings</p>
-            </div>
-            <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100">
-              <p className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-2">Total Orders</p>
-              <h2 className="text-4xl font-black" style={{ color: brandConfig.primaryColor }}>{totalOrders}</h2>
-              <p className="text-xs text-gray-400 mt-1">Global Sales Count</p>
-            </div>
-            <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100">
-              <p className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-2">Avg. Order Value</p>
-              <h2 className="text-4xl font-black" style={{ color: brandConfig.primaryColor }}>₦{Math.round(averageOrderValue).toLocaleString()}</h2>
-              <p className="text-xs text-gray-400 mt-1">Average per customer</p>
-            </div>
-          </div>
+    {/* --- ANALYTICS TAB --- */}
+{activeTab === 'analytics' && (
+  <div className="space-y-8 animate-fade-in">
+    
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      
+      {/* 1. Total Revenue Card */}
+      <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 flex flex-col">
+        <p className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-2">Total Revenue</p>
+        <h2 className="text-4xl font-black" style={{ color: brandConfig.primaryColor }}>
+          ₦{totalRevenue.toLocaleString()}
+        </h2>
+        
+        {/* ONLY SHOW THIS TO SUPER ADMIN */}
+        {isSuperAdmin && (
+          <>
+            <p className="text-[10px] text-blue-500 font-bold mt-2 uppercase tracking-tighter">
+              Combined Brand Earnings
+            </p>
 
-          <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 max-w-2xl">
+            {/* THE BREAKDOWN LIST */}
+            <div className="mt-6 pt-4 border-t border-dashed border-gray-100 space-y-2">
+              <p className="text-[10px] text-gray-400 font-bold uppercase mb-2">Earnings by Brand:</p>
+              {Object.entries(revenueByBrand).map(([brandName, amount]) => (
+                <div key={brandName} className="flex justify-between items-center bg-gray-50 p-3 rounded-xl border border-gray-100">
+                  <span className="text-[10px] font-black uppercase text-gray-500">
+                    {brandName === 'pantry-co' ? '📦 Pantry' : brandName === 'yummys' ? '🍴 Yummys' : brandName}
+                  </span>
+                  <span className="text-sm font-bold text-gray-800">
+                    ₦{amount.toLocaleString()}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* 2. Total Orders Card */}
+      <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 h-fit">
+        <p className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-2">Total Orders</p>
+        <h2 className="text-4xl font-black text-gray-800">{totalOrders}</h2>
+        <p className="text-xs text-gray-400 mt-2">Completed sales</p>
+      </div>
+
+      {/* 3. Avg Order Card */}
+      <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 h-fit">
+        <p className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-2">Avg. Order Value</p>
+        <h2 className="text-4xl font-black text-gray-800">
+          ₦{Math.round(averageOrderValue).toLocaleString()}
+        </h2>
+        <p className="text-xs text-gray-400 mt-2">Per unique visit</p>
+      </div>
+    </div>
+
+
+          {/* Top Products section... */}
+  <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 max-w-2xl">
   <h3 className="font-bold text-lg mb-6 flex items-center gap-2">
     <span>🏆</span> Top Selling Items Across Brands
   </h3>
