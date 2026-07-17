@@ -13,9 +13,14 @@ export default function Admin({ user }) {
   const navigate = useNavigate();
   const [userProfile, setUserProfile] = useState(null);
 
-  const [newProduct, setNewProduct] = useState({
-    name: '', price: '', description: '', long_description: '', image_url: '', ingredients: ''
-  });
+  const [settings, setSettings] = useState({
+  hero_title: '', hero_subtitle: '', cta_button_text: '', about_story: ''});
+
+const [newProduct, setNewProduct] = useState({
+  name: '', price: '', description: '', long_description: '', 
+  image_url: '', ingredients: '', 
+  category: 'General', is_available: true //
+});
 
   useEffect(() => {
     checkAdmin();
@@ -58,40 +63,60 @@ async function checkAdmin() {
 async function fetchData() {
     setLoading(true);
     try {
-      const { data: profileData, error: profileError } = await supabase
+      console.log("--- STARTING DATA FETCH ---");
+      
+      // 1. Get the current user's profile
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('brand_id, role')
+        .select('role, brand_id')
         .eq('id', user.id)
         .single();
 
       if (profileError) throw profileError;
-
-      // SAVE TO STATE SO JSX CAN SEE IT
-      setUserProfile(profileData); 
-
-      const isSuperAdmin = profileData?.brand_id === 'all';
+      
+      setUserProfile(profile);
+      const isSuperAdmin = profile.brand_id === 'all';
       const currentSiteBrand = import.meta.env.VITE_BRAND || 'yummys';
 
+      console.log("User Role:", profile.role, "| User Brand:", profile.brand_id);
+      console.log("Is Super Admin:", isSuperAdmin);
+
+      // 2. Setup Queries
       let productQuery = supabase.from('products').select('*');
       let orderQuery = supabase.from('orders').select('*');
+      let settingsQuery = supabase.from('site_settings').select('*').eq('brand_id', isSuperAdmin ? currentSiteBrand : profile.brand_id).single();
 
+      // 3. Apply Brand Filtering if NOT Super Admin
       if (!isSuperAdmin) {
-        productQuery = productQuery.eq('brand_id', profileData?.brand_id);
-        orderQuery = orderQuery.eq('brand_id', profileData?.brand_id);
+        console.log("Filtering for specific brand:", profile.brand_id);
+        productQuery = productQuery.eq('brand_id', profile.brand_id);
+        orderQuery = orderQuery.eq('brand_id', profile.brand_id);
+      } else {
+        console.log("Super Admin: Fetching all orders...");
       }
 
-      const [prodRes, ordRes] = await Promise.all([
+      // 4. Run all requests at once
+      const [prodRes, ordRes, setRes] = await Promise.all([
         productQuery,
-        orderQuery.order('created_at', { ascending: false })
+        orderQuery.order('created_at', { ascending: false }),
+        settingsQuery
       ]);
+
+      if (prodRes.error) console.error("Product Error:", prodRes.error.message);
+      if (ordRes.error) console.error("Order Error:", ordRes.error.message);
+
+      console.log("Orders received from Supabase:", ordRes.data?.length || 0);
 
       setProducts(prodRes.data || []);
       setOrders(ordRes.data || []);
+      if (setRes.data) setSettings(setRes.data);
 
     } catch (error) {
-      console.error(error.message);
+      console.error("Critical Dashboard Error:", error.message);
+      alert("Error loading dashboard: " + error.message);
     } finally {
       setLoading(false);
+      console.log("--- DATA FETCH FINISHED ---");
     }
   }
 
@@ -148,7 +173,7 @@ const getImageUrl = (product) => {
       if (error) alert(error.message); else alert("Created!");
     }
     setEditingId(null);
-    setNewProduct({ name:'', price:'', description:'', long_description:'', image_url:'', ingredients:'' });
+    setNewProduct({ name:'', price:'', description:'', long_description:'', image_url:'', ingredients:'', category: 'General', is_available: true });
     fetchData();
   }
 
@@ -161,7 +186,9 @@ const getImageUrl = (product) => {
       description: product.description || '',
       long_description: product.long_description || '',
       image_url: product.image_url || '',
-      ingredients: Array.isArray(product.ingredients) ? product.ingredients.join(', ') : (product.ingredients || '')
+      ingredients: Array.isArray(product.ingredients) ? product.ingredients.join(', ') : (product.ingredients || ''),
+      category: product.category || 'General',
+      is_available: product.is_available !== undefined ? product.is_available : true
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -202,6 +229,34 @@ const getImageUrl = (product) => {
   // Define isSuperAdmin clearly based on the profile state
   const isSuperAdmin = userProfile?.brand_id === 'all';
 
+  // QUICK UPDATE FUNCTION
+  async function toggleAvailability(id, currentStatus) {
+    const { error } = await supabase
+      .from('products')
+      .update({ is_available: !currentStatus }) // Flips true to false, or false to true
+      .eq('id', id);
+
+    if (error) {
+      alert("Error updating status: " + error.message);
+    } else {
+      // Refresh the list immediately so the UI updates
+      fetchData();
+    }
+  }
+
+  async function updateProductCategory(id, newCategory) {
+    const { error } = await supabase
+      .from('products')
+      .update({ category: newCategory })
+      .eq('id', id);
+
+    if (error) {
+      alert("Error updating category: " + error.message);
+    } else {
+      fetchData();
+    }
+  }
+
   if (loading) return <div className="p-20 text-center">Loading Dashboard...</div>;
 
 return (
@@ -212,6 +267,7 @@ return (
           <button onClick={() => setActiveTab('products')} className={`px-4 md:px-6 py-2 rounded-full font-bold transition whitespace-nowrap ${activeTab === 'products' ? 'bg-black text-white' : 'bg-gray-200 text-gray-600'}`}>Products</button>
           <button onClick={() => setActiveTab('orders')} className={`px-4 md:px-6 py-2 rounded-full font-bold transition whitespace-nowrap ${activeTab === 'orders' ? 'bg-black text-white' : 'bg-gray-200 text-gray-600'}`}>Orders</button>
           <button onClick={() => setActiveTab('analytics')} className={`px-4 md:px-6 py-2 rounded-full font-bold transition whitespace-nowrap ${activeTab === 'analytics' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-600'}`}>Analytics</button>
+          <button onClick={() => setActiveTab('settings')} className={`px-4 md:px-6 py-2 rounded-full font-bold whitespace-nowrap transition ${activeTab === 'settings' ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-600'}`}>Settings</button>
         </div>
       </div>
 
@@ -219,7 +275,7 @@ return (
       {activeTab === 'products' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 animate-fade-in">
           <form onSubmit={handleSubmit} className="bg-white p-6 rounded-2xl shadow-lg h-fit space-y-4 border-2" style={{ borderColor: editingId ? brandConfig.primaryColor : 'transparent' }}>
-            <h3 className="text-xl font-bold">{editingId ? '📝 Edit Product' : 'Add New Product'}</h3>
+            <h3 className="text-xl font-bold">{editingId ? '📝 Edit Product' : '✨ Add New Product'}</h3>
             <div className="space-y-3">
               <input type="text" placeholder="Name" className="w-full border p-3 rounded-xl focus:outline-none" required value={newProduct.name} onChange={e => setNewProduct({...newProduct, name: e.target.value})} />
               <input type="number" placeholder="Price (₦)" className="w-full border p-3 rounded-xl focus:outline-none" required value={newProduct.price} onChange={e => setNewProduct({...newProduct, price: e.target.value})} />
@@ -236,13 +292,13 @@ return (
                </label>
                {newProduct.image_url && (
                  <img src={getImageUrl({ 
-        image_url: newProduct.image_url, 
-        brand_id: import.meta.env.VITE_BRAND 
-          })} 
-          className="h-32 w-full object-contain rounded-lg mt-4 bg-white p-2 border" 
-          alt="preview" 
-        />
-      )}
+                    image_url: newProduct.image_url, 
+                    brand_id: import.meta.env.VITE_BRAND 
+                  })} 
+                  className="h-32 w-full object-contain rounded-lg mt-4 bg-white p-2 border" 
+                  alt="preview" 
+                />
+              )}
             </div>
             <button type="submit" disabled={uploading} style={{ backgroundColor: brandConfig.primaryColor }} className="w-full text-white py-4 rounded-xl font-bold shadow-lg hover:brightness-110 disabled:opacity-50">
               {editingId ? 'Update Product' : 'Save Product'}
@@ -254,185 +310,216 @@ return (
 
           <div className="lg:col-span-2 space-y-4">
             <h3 className="font-bold text-gray-400 uppercase text-sm mb-4">Inventory ({products.length})</h3>
-            {products.map(p => (
-              <div key={p.id} className="bg-white p-4 rounded-2xl shadow-sm flex items-center justify-between border border-gray-100">
-                <div className="flex items-center gap-4">
-                  <img src={getImageUrl(p)} className="h-16 w-16 object-contain bg-gray-50 rounded-xl p-1 border" alt="" />
-                  <div>
-                    <p className="font-bold text-gray-800">{p.name}</p>
-                    <p className="text-sm font-bold" style={{ color: brandConfig.primaryColor }}>₦{p.price.toLocaleString()}</p>
+            
+            {/* UPDATED PRODUCT CARDS WITH QUICK CONTROLS */}
+            <div className="grid grid-cols-1 gap-4">
+              {products.map(p => (
+                <div key={p.id} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-4 hover:shadow-md transition">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      {/* Grayscale if sold out */}
+                      <img 
+                        src={getImageUrl(p)} 
+                        className={`h-16 w-16 object-contain bg-gray-50 rounded-xl p-1 border ${!p.is_available ? 'grayscale opacity-50' : ''}`} 
+                        alt={p.name} 
+                      />
+                      <div>
+                        <p className="font-bold text-gray-800">{p.name}</p>
+                        <p className="text-sm font-bold" style={{ color: brandConfig.primaryColor }}>₦{p.price.toLocaleString()}</p>
+                      </div>
+                    </div>
+
+                    {/* QUICK AVAILABILITY TOGGLE */}
+                    <button 
+                      onClick={() => toggleAvailability(p.id, p.is_available)}
+                      className={`px-3 py-1 rounded-full text-[10px] font-black uppercase transition-all
+                        ${p.is_available 
+                          ? 'bg-green-100 text-green-600 hover:bg-green-200' 
+                          : 'bg-red-100 text-red-600 hover:bg-red-200'}
+                      `}
+                    >
+                      {p.is_available ? '● In Stock' : '○ Sold Out'}
+                    </button>
+                  </div>
+
+                  {/* QUICK CATEGORY & ACTIONS BAR */}
+                  <div className="flex items-center justify-between pt-3 border-t border-gray-50">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Cat:</span>
+                      <select 
+                        value={p.category || 'General'}
+                        onChange={(e) => updateProductCategory(p.id, e.target.value)}
+                        className="text-xs bg-gray-50 border-none rounded-md px-2 py-1 font-bold text-gray-600 focus:ring-1 focus:ring-gray-300 cursor-pointer"
+                      >
+                        <option value="General">General</option>
+                        <option value="Main Dish">Main Dish</option>
+                        <option value="Sides">Sides</option>
+                        <option value="Drinks">Drinks</option>
+                        <option value="Snacks">Snacks</option>
+                        <option value="Grocery">Grocery</option>
+                      </select>
+                    </div>
+
+                    <div className="flex gap-4">
+                      <button onClick={() => startEdit(p)} className="text-blue-500 text-xs font-bold hover:underline transition">Edit Info</button>
+                      <button onClick={() => deleteProduct(p.id)} className="text-red-400 text-xs font-bold hover:underline transition">Delete</button>
+                    </div>
                   </div>
                 </div>
-                <div className="flex gap-4 pr-2">
-                  <button onClick={() => startEdit(p)} className="text-blue-500 text-sm font-bold hover:underline">Edit</button>
-                  <button onClick={() => deleteProduct(p.id)} className="text-red-400 text-sm font-bold hover:underline">Delete</button>
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       )}
 
-     {/* --- UPDATED ORDERS TAB IN ADMIN.JSX --- */}
-{activeTab === 'orders' && (
-  <div className="max-w-4xl mx-auto space-y-6 animate-fade-in">
-    <h3 className="font-bold text-gray-400 uppercase text-sm mb-4 tracking-widest">Recent Transactions</h3>
-    {orders.map(o => (
-      <div key={o.id} className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex flex-col md:flex-row justify-between gap-6">
-        <div className="flex-1">
-          <div className="flex items-center gap-3 mb-3">
-            {/* Status Badge */}
-            <span 
-              className={`text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-tighter shadow-sm
-                ${o.status === 'Completed' ? 'bg-green-100 text-green-700' : 
-                  o.status === 'Out for Delivery' ? 'bg-blue-100 text-blue-700' : 
-                  o.status === 'Preparing' ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-700'}
-              `}
-            >
-              {o.status || 'Paid'}
-            </span>
-            <p className="text-sm font-mono text-gray-400">ID: {o.id.toString().slice(0,8)}</p>
-          </div>
-          
-          <div className="space-y-1 mb-4">
-            {o.items.map((item, i) => (
-              <p key={i} className="text-sm text-gray-700">
-                <span className="font-bold" style={{ color: brandConfig.primaryColor }}>{item.quantity}x</span> {item.name}
-              </p>
-            ))}
-          </div>
-
-          {/* STATUS UPDATE DROPDOWN */}
-          <div className="mt-4 pt-4 border-t border-gray-50">
-            <p className="text-[10px] font-bold text-gray-400 uppercase mb-2">Update Progress:</p>
-            <select 
-              value={o.status || 'Paid'}
-              onChange={async (e) => {
-                const newStatus = e.target.value;
-                const { error } = await supabase.from('orders').update({ status: newStatus }).eq('id', o.id);
-                if (!error) fetchData(); // Refresh list to show change
-                else alert("Failed to update status");
-              }}
-              className="bg-gray-50 border border-gray-200 text-sm rounded-lg p-2 focus:outline-none cursor-pointer hover:border-gray-400 transition"
-            >
-              <option value="Paid">Paid (New)</option>
-              <option value="Preparing">Preparing</option>
-              <option value="Out for Delivery">Out for Delivery</option>
-              <option value="Completed">Completed</option>
-              <option value="Cancelled">Cancelled</option>
-            </select>
-          </div>
-        </div>
-        
-        <div className="md:text-right flex flex-col justify-between items-end">
-          <p className="text-xs text-gray-400">{new Date(o.created_at).toLocaleString()}</p>
-          <div>
-            <p className="text-2xl font-black" style={{ color: brandConfig.primaryColor }}>₦{o.total_amount.toLocaleString()}</p>
-            <p className="text-[10px] text-gray-300 font-mono">REF: {o.payment_reference}</p>
-            {userProfile?.brand_id === 'all' && (
-               <span className="text-[9px] bg-gray-100 px-2 py-0.5 rounded text-gray-400 uppercase font-bold">{o.brand_id}</span>
-            )}
-          </div>
-        </div>
-      </div>
-    ))}
-  </div>
-)}
-
-    {/* --- ANALYTICS TAB --- */}
-{activeTab === 'analytics' && (
-  <div className="space-y-8 animate-fade-in">
-    
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-      
-      {/* 1. Total Revenue Card */}
-      <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 flex flex-col">
-        <p className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-2">Total Revenue</p>
-        <h2 className="text-4xl font-black" style={{ color: brandConfig.primaryColor }}>
-          ₦{totalRevenue.toLocaleString()}
-        </h2>
-        
-        {/* ONLY SHOW THIS TO SUPER ADMIN */}
-        {isSuperAdmin && (
-          <>
-            <p className="text-[10px] text-blue-500 font-bold mt-2 uppercase tracking-tighter">
-              Combined Brand Earnings
-            </p>
-
-            {/* THE BREAKDOWN LIST */}
-            <div className="mt-6 pt-4 border-t border-dashed border-gray-100 space-y-2">
-              <p className="text-[10px] text-gray-400 font-bold uppercase mb-2">Earnings by Brand:</p>
-              {Object.entries(revenueByBrand).map(([brandName, amount]) => (
-                <div key={brandName} className="flex justify-between items-center bg-gray-50 p-3 rounded-xl border border-gray-100">
-                  <span className="text-[10px] font-black uppercase text-gray-500">
-                    {brandName === 'pantry-co' ? '📦 Pantry' : brandName === 'yummys' ? '🍴 Yummys' : brandName}
+      {/* --- ORDERS TAB --- */}
+      {activeTab === 'orders' && (
+        <div className="max-w-4xl mx-auto space-y-6 animate-fade-in">
+          <h3 className="font-bold text-gray-400 uppercase text-sm mb-4 tracking-widest">Recent Transactions</h3>
+          {orders.map(o => (
+            <div key={o.id} className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex flex-col md:flex-row justify-between gap-6">
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-3">
+                  <span 
+                    className={`text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-tighter shadow-sm
+                      ${o.status === 'Completed' ? 'bg-green-100 text-green-700' : 
+                        o.status === 'Out for Delivery' ? 'bg-blue-100 text-blue-700' : 
+                        o.status === 'Preparing' ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-700'}
+                    `}
+                  >
+                    {o.status || 'Paid'}
                   </span>
-                  <span className="text-sm font-bold text-gray-800">
-                    ₦{amount.toLocaleString()}
-                  </span>
+                  <p className="text-sm font-mono text-gray-400">ID: {o.id.toString().slice(0,8)}</p>
                 </div>
-              ))}
-            </div>
-          </>
-        )}
-      </div>
+                
+                <div className="space-y-1 mb-4">
+                  {o.items.map((item, i) => (
+                    <p key={i} className="text-sm text-gray-700">
+                      <span className="font-bold" style={{ color: brandConfig.primaryColor }}>{item.quantity}x</span> {item.name}
+                    </p>
+                  ))}
+                </div>
 
-      {/* 2. Total Orders Card */}
-      <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 h-fit">
-        <p className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-2">Total Orders</p>
-        <h2 className="text-4xl font-black text-gray-800">{totalOrders}</h2>
-        <p className="text-xs text-gray-400 mt-2">Completed sales</p>
-      </div>
-
-      {/* 3. Avg Order Card */}
-      <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 h-fit">
-        <p className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-2">Avg. Order Value</p>
-        <h2 className="text-4xl font-black text-gray-800">
-          ₦{Math.round(averageOrderValue).toLocaleString()}
-        </h2>
-        <p className="text-xs text-gray-400 mt-2">Per unique visit</p>
-      </div>
-    </div>
-
-
-          {/* Top Products section... */}
-  <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 max-w-2xl">
-  <h3 className="font-bold text-lg mb-6 flex items-center gap-2">
-    <span>🏆</span> Top Selling Items Across Brands
-  </h3>
-  <div className="space-y-4">
-    {topProducts.length > 0 ? (
-      topProducts.map(([name, qty], index) => {
-        
-        // --- THIS IS THE NEW LINE YOU ASKED FOR ---
-        // It looks through your products list to see which brand owns this item name
-        const itemBrand = products.find((p) => p.name === name)?.brand_id;
-
-        return (
-          <div key={index} className="flex justify-between items-center border-b border-gray-50 pb-3">
-            <div>
-              <p className="font-bold text-gray-700">{name}</p>
+                <div className="mt-4 pt-4 border-t border-gray-50">
+                  <p className="text-[10px] font-bold text-gray-400 uppercase mb-2">Update Progress:</p>
+                  <select 
+                    value={o.status || 'Paid'}
+                    onChange={async (e) => {
+                      const newStatus = e.target.value;
+                      const { error } = await supabase.from('orders').update({ status: newStatus }).eq('id', o.id);
+                      if (!error) fetchData();
+                      else alert("Failed to update status");
+                    }}
+                    className="bg-gray-50 border border-gray-200 text-sm rounded-lg p-2 focus:outline-none cursor-pointer hover:border-gray-400 transition"
+                  >
+                    <option value="Paid">Paid (New)</option>
+                    <option value="Preparing">Preparing</option>
+                    <option value="Out for Delivery">Out for Delivery</option>
+                    <option value="Completed">Completed</option>
+                    <option value="Cancelled">Cancelled</option>
+                  </select>
+                </div>
+              </div>
               
-              {/* BRAND LABEL: Shows 'yummys' or 'pantry-co' next to the product */}
-              <span className="text-[10px] uppercase font-extrabold px-2 py-0.5 rounded bg-gray-100 text-gray-400">
-                {itemBrand || "Unknown"}
-              </span>
+              <div className="md:text-right flex flex-col justify-between items-end">
+                <p className="text-xs text-gray-400">{new Date(o.created_at).toLocaleString()}</p>
+                <div>
+                  <p className="text-2xl font-black" style={{ color: brandConfig.primaryColor }}>₦{o.total_amount.toLocaleString()}</p>
+                  <p className="text-[10px] text-gray-300 font-mono uppercase">Ref: {o.payment_reference}</p>
+                  {userProfile?.brand_id === 'all' && (
+                     <span className="text-[9px] bg-gray-100 px-2 py-0.5 rounded text-gray-400 uppercase font-bold">Brand: {o.brand_id}</span>
+                  )}
+                </div>
+              </div>
             </div>
-            
-            <span 
-              style={{ backgroundColor: brandConfig.lightColor, color: brandConfig.backColor }} 
-              className="px-3 py-1 rounded-full text-xs font-black"
-            >
-              {qty} Sold
-            </span>
+          ))}
+        </div>
+      )}
+
+      {/* --- ANALYTICS TAB --- */}
+      {activeTab === 'analytics' && (
+        <div className="space-y-8 animate-fade-in">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 flex flex-col">
+              <p className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-2">Total Revenue</p>
+              <h2 className="text-4xl font-black" style={{ color: brandConfig.primaryColor }}>₦{totalRevenue.toLocaleString()}</h2>
+              {isSuperAdmin && (
+                <>
+                  <p className="text-[10px] text-blue-500 font-bold mt-2 uppercase tracking-tighter">Combined Brand Earnings</p>
+                  <div className="mt-6 pt-4 border-t border-dashed border-gray-100 space-y-2">
+                    <p className="text-[10px] text-gray-400 font-bold uppercase mb-2">Earnings by Brand:</p>
+                    {Object.entries(revenueByBrand).map(([brandName, amount]) => (
+                      <div key={brandName} className="flex justify-between items-center bg-gray-50 p-3 rounded-xl border border-gray-100">
+                        <span className="text-[10px] font-black uppercase text-gray-500">
+                          {brandName === 'pantry-co' ? '📦 Pantry' : brandName === 'yummys' ? '🍴 Yummys' : brandName}
+                        </span>
+                        <span className="text-sm font-bold text-gray-800">₦{amount.toLocaleString()}</span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+            <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 h-fit">
+              <p className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-2">Total Orders</p>
+              <h2 className="text-4xl font-black text-gray-800">{totalOrders}</h2>
+              <p className="text-xs text-gray-400 mt-2">Completed sales</p>
+            </div>
+            <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 h-fit">
+              <p className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-2">Avg. Order Value</p>
+              <h2 className="text-4xl font-black text-gray-800">₦{Math.round(averageOrderValue).toLocaleString()}</h2>
+              <p className="text-xs text-gray-400 mt-2">Per unique visit</p>
+            </div>
           </div>
-        );
-      })
-    ) : (
-      <p className="text-gray-400 italic">No sales data yet.</p>
-    )}
-  </div>
-</div>
+
+          <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 max-w-2xl">
+            <h3 className="font-bold text-lg mb-6 flex items-center gap-2"><span>🏆</span> Top Selling Items Across Brands</h3>
+            <div className="space-y-4">
+              {topProducts.length > 0 ? topProducts.map(([name, qty], index) => {
+                const itemBrand = products.find((p) => p.name === name)?.brand_id;
+                return (
+                  <div key={index} className="flex justify-between items-center border-b border-gray-50 pb-3">
+                    <div>
+                      <p className="font-bold text-gray-700">{name}</p>
+                      <span className="text-[10px] uppercase font-extrabold px-2 py-0.5 rounded bg-gray-100 text-gray-400">{itemBrand || "Unknown"}</span>
+                    </div>
+                    <span style={{ backgroundColor: brandConfig.lightColor, color: brandConfig.accentColor }} className="px-3 py-1 rounded-full text-xs font-black">{qty} Sold</span>
+                  </div>
+                );
+              }) : <p className="text-gray-400 italic">No sales data yet.</p>}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* --- SETTINGS TAB --- */}
+      {activeTab === 'settings' && (
+        <div className="max-w-2xl mx-auto animate-fade-in">
+          <form 
+            onSubmit={async (e) => {
+              e.preventDefault();
+              const bId = userProfile?.brand_id === 'all' ? import.meta.env.VITE_BRAND : userProfile.brand_id;
+              const { error } = await supabase.from('site_settings').upsert({ brand_id: bId, ...settings });
+              if (!error) alert("Website updated successfully! 🚀");
+              else alert(error.message);
+            }}
+            className="bg-white p-8 rounded-3xl shadow-lg space-y-6"
+          >
+            <h3 className="text-xl font-bold mb-4">Edit Website Content</h3>
+            <div>
+              <label className="block text-xs font-bold text-gray-400 uppercase mb-2">Hero Title</label>
+              <input type="text" value={settings.hero_title} onChange={e => setSettings({...settings, hero_title: e.target.value})} className="w-full border p-3 rounded-xl focus:outline-none" />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-400 uppercase mb-2">Hero Subtitle</label>
+              <textarea value={settings.hero_subtitle} onChange={e => setSettings({...settings, hero_subtitle: e.target.value})} className="w-full border p-3 rounded-xl h-24 focus:outline-none" />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-400 uppercase mb-2">About Our Story</label>
+              <textarea value={settings.about_story} onChange={e => setSettings({...settings, about_story: e.target.value})} className="w-full border p-3 rounded-xl h-32 focus:outline-none" />
+            </div>
+            <button style={{ backgroundColor: brandConfig.primaryColor }} className="w-full py-4 text-white rounded-xl font-bold shadow-lg hover:brightness-110 transition">Update Live Website</button>
+          </form>
         </div>
       )}
     </div>

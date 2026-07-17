@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { brandConfig } from '../config/brands';
 import SEO from '../components/SEO'; // Import the SEO component
 import { FaWhatsapp } from 'react-icons/fa';
+import { supabase } from '../config/supabaseClient';
 
 export default function Home() {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -26,6 +27,31 @@ useEffect(() => {
 
     return () => clearInterval(interval) 
   }, [heroImages.length]) 
+
+   const [content, setContent] = useState(null);
+
+    useEffect(() => {
+      async function fetchSettings() {
+        const bId = import.meta.env.VITE_BRAND || 'yummys';
+        
+        // DEBUG: Add this to see what ID the site is looking for
+        console.log("Home page looking for settings with Brand ID:", bId);
+
+        const { data, error } = await supabase
+          .from('site_settings')
+          .select('*')
+          .eq('brand_id', bId)
+          .single();
+
+        if (error) {
+          console.error("Error fetching site settings:", error.message);
+        } else {
+          console.log("Settings found and loaded:", data);
+          setContent(data);
+        }
+      }
+      fetchSettings();
+    }, []);
 
   return (
     <div 
@@ -55,31 +81,38 @@ useEffect(() => {
              Fast Delivery within Ikoyi & envrionments.
           </div>
           
-          <h1 
-            style={{ color: brandConfig.accentColor }}
-            className="text-4xl md:text-7xl font-extrabold leading-tight mb-6"
-          >
-            {brandConfig.name === "Yummys" ? "Hungry?" : "Need Pantry Items?"} <br />
-            <span style={{ color: brandConfig.lightColor }}>We got you.</span>
-          </h1>
-          
-          <p 
-            style={{ color: brandConfig.accentColor }}
-            className="text-xl mb-8 max-w-lg mx-auto md:mx-0 opacity-90"
-          >
-            {brandConfig.name === "Yummys" 
-              ? "Experience culinary excellence with locally sourced ingredients and a modern atmosphere." 
-              : "A curated space for premium imported snacks, drinks, and pantry essentials — bringing global tastes closer to you."
-            }       
-          </p>
+        <h1 
+        style={{ color: brandConfig.accentColor }}
+        className="text-4xl md:text-7xl font-extrabold leading-tight mb-6"
+      >
+        {/* 1. Try DB title. 2. If null, use Yummys fallback. 3. Else use Pantry fallback */}
+        {content?.hero_title || (brandConfig.name === "Yummys" ? "Hungry?" : "Need Pantry Items?")} 
+        <br />
+        <span style={{ color: brandConfig.lightColor }}>We got you.</span>
+      </h1>
+
+      <p 
+        style={{ color: brandConfig.accentColor }}
+        className="text-xl mb-8 max-w-lg mx-auto md:mx-0 opacity-90"
+      >
+        {/* 1. Try DB subtitle. 2. If null, use Yummys fallback. 3. Else use Pantry fallback */}
+        {content?.hero_subtitle || (brandConfig.name === "Yummys" 
+          ? "Experience culinary excellence with locally sourced ingredients and a modern atmosphere." 
+          : "A curated space for premium imported snacks, drinks, and pantry essentials — bringing global tastes closer to you.")
+        }       
+      </p>
           
           <div className="flex gap-4 justify-center md:justify-start">
             <Link to="/menu">
-              <button 
-                style={{ backgroundColor: brandConfig.primaryColor }} 
-                className="px-8 py-4 rounded-full text-lg font-bold transition-all duration-300 shadow-xl hover:scale-105 hover:brightness-110 text-white"
+             <button 
+               style={{ backgroundColor: brandConfig.primaryColor }}
+              className="inline-block text-white px-8 py-3 rounded-xl font-bold hover:brightness-110 transition shadow-lg"
               >
-                Order Now <span className="text-3xl">{brandConfig.name === "Yummys" ? "🍴" : "🌾"}</span>
+                {/* 1. Try DB text. 2. Fallback to 'Order Now' */}
+                {content?.cta_button_text || "Order Now"} 
+                <span className="text-3xl ml-2">
+                  {brandConfig.name === "Yummys" ? "🍴" : "🌾"}
+                </span>
               </button>
             </Link>
           </div>
