@@ -163,8 +163,8 @@ function App() {
             <div>
               <h3 style={{ color: brandConfig.primaryColor }} className="font-bold text-lg mb-6 uppercase">Newsletter</h3>
               <div className="flex">
-                <input type="text" className="p-3 w-full text-black rounded-l-lg text-sm" placeholder="Email" />
-                <button style={{ backgroundColor: brandConfig.primaryColor }} className="px-5 rounded-r-lg font-bold hover:brightness-110 transition-all">Go</button>
+                <input type="text" className="p-3 w-full bd rounded-l-lg text-sm" placeholder="Email" />
+                <button style={{ backgroundColor: brandConfig.primaryColor }} className="px-5 rounded-r-lg font-bold hover:brightness-110 active:scale-95 transition-all">Go</button>
               </div>
             </div>
           </div>
