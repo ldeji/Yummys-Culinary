@@ -230,19 +230,27 @@ const getImageUrl = (product) => {
   const isSuperAdmin = userProfile?.brand_id === 'all';
 
   // QUICK UPDATE FUNCTION
-  async function toggleAvailability(id, currentStatus) {
-    const { error } = await supabase
-      .from('products')
-      .update({ is_available: !currentStatus }) // Flips true to false, or false to true
-      .eq('id', id);
+ async function toggleAvailability(id, currentStatus) {
+  // 1. UPDATE LOCALLY FIRST (Stops the layout shift/flicker)
+  setProducts(prevProducts => 
+    prevProducts.map(p => 
+      p.id === id ? { ...p, is_available: !currentStatus } : p
+    )
+  );
 
-    if (error) {
-      alert("Error updating status: " + error.message);
-    } else {
-      // Refresh the list immediately so the UI updates
-      fetchData();
-    }
+  // 2. UPDATE DATABASE IN BACKGROUND
+  const { error } = await supabase
+    .from('products')
+    .update({ is_available: !currentStatus })
+    .eq('id', id);
+
+  if (error) {
+    alert("Error updating status: " + error.message);
+    // If it fails, re-fetch to fix the UI
+    fetchData(); 
   }
+
+}
 
   async function updateProductCategory(id, newCategory) {
     const { error } = await supabase
@@ -331,15 +339,19 @@ return (
 
                     {/* QUICK AVAILABILITY TOGGLE */}
                     <button 
-                      onClick={() => toggleAvailability(p.id, p.is_available)}
-                      className={`px-3 py-1 rounded-full text-[10px] font-black uppercase transition-all
-                        ${p.is_available 
-                          ? 'bg-green-100 text-green-600 hover:bg-green-200' 
-                          : 'bg-red-100 text-red-600 hover:bg-red-200'}
-                      `}
-                    >
-                      {p.is_available ? '● In Stock' : '○ Sold Out'}
-                    </button>
+          type="button" // <--- CRITICAL: Prevents form submission/jumps
+          onClick={(e) => {
+            e.preventDefault(); // Prevents any default browser scroll actions
+            toggleAvailability(p.id, p.is_available);
+          }}
+          className={`px-3 py-1 rounded-full text-[10px] font-black uppercase transition-all
+            ${p.is_available 
+              ? 'bg-green-100 text-green-600 hover:bg-green-200' 
+              : 'bg-red-100 text-red-600 hover:bg-red-200'}
+          `}
+        >
+          {p.is_available ? '● In Stock' : '○ Sold Out'}
+        </button>
                   </div>
 
                   {/* QUICK CATEGORY & ACTIONS BAR */}

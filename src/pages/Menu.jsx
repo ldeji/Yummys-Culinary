@@ -146,7 +146,7 @@ export default function Menu({ addToCart }) {
                 <div className="p-5">
                   <div className="flex justify-between items-start mb-2">
                     <h3 className="font-bold text-lg text-gray-800 leading-tight">{item.name}</h3>
-                    <span style={{ color: item.is_available ? brandConfig.accentColor : '#999' }} className="font-bold ml-2 whitespace-nowrap">
+                    <span style={{ color: item.is_available ? brandConfig.lightColor : '#999' }} className="font-bold ml-2 whitespace-nowrap">
                       ₦{item.price?.toLocaleString()}
                     </span>
                   </div>
