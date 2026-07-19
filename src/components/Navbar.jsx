@@ -192,9 +192,11 @@ export default function Navbar({ cartCount, setIsCartOpen, user }) {
               </button>
             </form>
 
-            <Link to="/" className="text-gray-700 font-medium block p-2 rounded-md hover:bg-gray-50" onClick={() => setIsMenuOpen(false)}>🏠 Home</Link>
-            <Link to="/menu" className="text-gray-700 font-medium block p-2 rounded-md hover:bg-gray-50" onClick={() => setIsMenuOpen(false)}>🍴 {brandConfig.name === "Yummys" ? "Menu" : "Shop"}</Link>
-            <Link to="/about" className="text-gray-700 font-medium block p-2 rounded-md hover:bg-gray-50" onClick={() => setIsMenuOpen(false)}>ℹ️ About</Link>
+            <Link to="/" className="text-gray-700 font-medium block p-2 rounded-md hover:bg-gray-50" onClick={() => setIsMenuOpen(false)}>Home</Link>
+            <Link to="/menu" className="text-gray-700 font-medium block p-2 rounded-md hover:bg-gray-50" onClick={() => setIsMenuOpen(false)}>
+              {brandConfig.name === "Yummys" ? "Menu" : "Shop"}
+            </Link>
+            <Link to="/about" className="text-gray-700 font-medium block p-2 rounded-md hover:bg-gray-50" onClick={() => setIsMenuOpen(false)}> About</Link>
             
             {user ? (
               <div className="pt-4 border-t space-y-2">
