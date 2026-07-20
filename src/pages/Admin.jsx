@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../config/supabaseClient';
 import { brandConfig } from '../config/brands';
 import { useNavigate } from 'react-router-dom';
+import imageCompression from 'browser-image-compression'; // 1. Ensure this is imported
 
 export default function Admin({ user }) {
   const [activeTab, setActiveTab] = useState('products');
@@ -14,58 +15,49 @@ export default function Admin({ user }) {
   const [userProfile, setUserProfile] = useState(null);
 
   const [settings, setSettings] = useState({
-  hero_title: '', hero_subtitle: '', cta_button_text: '', about_story: ''});
+    hero_title: '', hero_subtitle: '', cta_button_text: '', about_story: ''
+  });
 
-const [newProduct, setNewProduct] = useState({
-  name: '', price: '', description: '', long_description: '', 
-  image_url: '', ingredients: '', 
-  category: 'General', is_available: true //
-});
+  const [newProduct, setNewProduct] = useState({
+    name: '', price: '', description: '', long_description: '', 
+    image_url: '', ingredients: '', 
+    category: 'General', is_available: true 
+  });
 
   useEffect(() => {
     checkAdmin();
   }, [user]);
 
-async function checkAdmin() {
-  if (!user) { navigate('/login'); return; }
+  async function checkAdmin() {
+    if (!user) { navigate('/login'); return; }
+    const currentBrand = import.meta.env.VITE_BRAND || 'yummys';
+    const { data: profile, error } = await supabase
+      .from('profiles')
+      .select('role, brand_id')
+      .eq('id', user.id)
+      .single();
 
-  const currentBrand = import.meta.env.VITE_BRAND || 'yummys';
+    if (error || !profile) {
+      console.error("Profile check failed");
+      navigate('/');
+      return;
+    }
 
-  const { data: profile, error } = await supabase
-    .from('profiles')
-    .select('role, brand_id')
-    .eq('id', user.id)
-    .single();
+    const isSuperAdmin = profile.brand_id === 'all';
+    const isBrandOwner = profile.brand_id === currentBrand;
 
-  if (error || !profile) {
-    console.error("Profile check failed");
-    navigate('/');
-    return;
+    if (profile.role === 'admin' && (isSuperAdmin || isBrandOwner)) {
+      fetchData(); 
+    } else {
+      const brandMessage = isSuperAdmin ? "Super Admin" : profile.brand_id;
+      alert(`Access Denied: You are registered as a ${brandMessage} admin. This site is ${currentBrand}.`);
+      navigate('/');
+    }
   }
 
-  // 1. You are the Super Admin
-  const isSuperAdmin = profile.brand_id === 'all';
-  
-  // 2. This is a Client Admin for THIS specific brand
-  const isBrandOwner = profile.brand_id === currentBrand;
-
-  if (profile.role === 'admin' && (isSuperAdmin || isBrandOwner)) {
-    // ACCESS GRANTED
-    fetchData(); 
-  } else {
-    // ACCESS DENIED
-    const brandMessage = isSuperAdmin ? "Super Admin" : profile.brand_id;
-    alert(`Access Denied: You are registered as a ${brandMessage} admin. This site is ${currentBrand}.`);
-    navigate('/');
-  }
-}
-
-async function fetchData() {
+  async function fetchData() {
     setLoading(true);
     try {
-      console.log("--- STARTING DATA FETCH ---");
-      
-      // 1. Get the current user's profile
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('role, brand_id')
@@ -78,34 +70,20 @@ async function fetchData() {
       const isSuperAdmin = profile.brand_id === 'all';
       const currentSiteBrand = import.meta.env.VITE_BRAND || 'yummys';
 
-      console.log("User Role:", profile.role, "| User Brand:", profile.brand_id);
-      console.log("Is Super Admin:", isSuperAdmin);
-
-      // 2. Setup Queries
       let productQuery = supabase.from('products').select('*');
       let orderQuery = supabase.from('orders').select('*');
       let settingsQuery = supabase.from('site_settings').select('*').eq('brand_id', isSuperAdmin ? currentSiteBrand : profile.brand_id).single();
 
-      // 3. Apply Brand Filtering if NOT Super Admin
       if (!isSuperAdmin) {
-        console.log("Filtering for specific brand:", profile.brand_id);
         productQuery = productQuery.eq('brand_id', profile.brand_id);
         orderQuery = orderQuery.eq('brand_id', profile.brand_id);
-      } else {
-        console.log("Super Admin: Fetching all orders...");
       }
 
-      // 4. Run all requests at once
       const [prodRes, ordRes, setRes] = await Promise.all([
         productQuery,
         orderQuery.order('created_at', { ascending: false }),
         settingsQuery
       ]);
-
-      if (prodRes.error) console.error("Product Error:", prodRes.error.message);
-      if (ordRes.error) console.error("Order Error:", ordRes.error.message);
-
-      console.log("Orders received from Supabase:", ordRes.data?.length || 0);
 
       setProducts(prodRes.data || []);
       setOrders(ordRes.data || []);
@@ -116,82 +94,132 @@ async function fetchData() {
       alert("Error loading dashboard: " + error.message);
     } finally {
       setLoading(false);
-      console.log("--- DATA FETCH FINISHED ---");
     }
   }
 
-  // IMAGE HELPER
-const getImageUrl = (product) => {
-  const url = product.image_url;
-  
-  // 1. If there's no URL, show placeholder
-  if (!url) return "https://via.placeholder.com/150";
+  const getImageUrl = (product) => {
+    const url = product.image_url;
+    if (!url) return "https://via.placeholder.com/150";
+    if (url.startsWith('http')) return url;
+    const folder = product.brand_id === 'pantry-co' ? 'pantry' : 'yummys';
+    return `/images/${folder}/${url}`;
+  };
 
-  // 2. If it's a cloud upload from Supabase (starts with http), use it directly
-  if (url.startsWith('http')) return url;
+ // --- OPTIMIZED IMAGE UPLOAD WITH DEBUGGING ---
+async function handleImageUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
 
-  // 3. THE FIX: Look at the product's OWN brand_id from the database row
-  // We don't care which site you are currently logged into.
-  const folder = product.brand_id === 'pantry-co' ? 'pantry' : 'yummys';
-  
-  return `/images/${folder}/${url}`;
-};
+  try {
+    setUploading(true);
+    console.log("1. Trying direct upload (No compression)...");
 
-  async function handleImageUpload(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-    try {
-      setUploading(true);
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}.${fileExt}`;
-      const { error: uploadError } = await supabase.storage.from('product-images').upload(fileName, file);
-      if (uploadError) throw uploadError;
-      const { data: urlData } = supabase.storage.from('product-images').getPublicUrl(fileName);
-      setNewProduct({ ...newProduct, image_url: urlData.publicUrl });
-      alert("Image uploaded successfully!");
-    } catch (error) {
-      alert("Upload error: " + error.message);
-    } finally {
-      setUploading(false);
+    const fileName = `${Date.now()}-${file.name}`;
+
+    const { data, error } = await supabase.storage
+      .from('product-images')
+      .upload(fileName, file); // Uploading the raw file directly
+
+    if (error) {
+      console.error("2. Supabase Error:", error);
+      alert("Upload failed: " + error.message);
+      return;
     }
+
+    console.log("3. Success! Getting URL...");
+    const { data: urlData } = supabase.storage.from('product-images').getPublicUrl(fileName);
+    
+    setNewProduct({ ...newProduct, image_url: urlData.publicUrl });
+    alert("Image uploaded! ✅");
+
+  } catch (err) {
+    console.error("4. Javascript Error:", err);
+  } finally {
+    setUploading(false);
   }
+}
 
-  async function handleSubmit(e) {
-    e.preventDefault();
-    const brandId = import.meta.env.VITE_BRAND || 'yummys';
-    const ingredientsArray = typeof newProduct.ingredients === 'string' 
-      ? newProduct.ingredients.split(',').map(i => i.trim()) 
-      : newProduct.ingredients;
+async function handleSubmit(e) {
+  e.preventDefault();
+  setLoading(true);
 
-    const productData = { ...newProduct, brand_id: brandId, ingredients: ingredientsArray };
+  const brandId = import.meta.env.VITE_BRAND || 'yummys';
 
+  // 1. Clean the ingredients string back into a real Array
+  const ingredientsArray = typeof newProduct.ingredients === 'string'
+    ? newProduct.ingredients.split(',').map(i => i.trim()).filter(i => i !== "")
+    : [];
+
+  // 2. Prepare the payload
+  const productData = {
+    name: newProduct.name,
+    price: Number(newProduct.price),
+    description: newProduct.description,
+    image_url: newProduct.image_url,
+    ingredients: ingredientsArray, // Real Array []
+    category: newProduct.category,
+    is_available: newProduct.is_available,
+    brand_id: brandId
+  };
+
+  try {
     if (editingId) {
       const { error } = await supabase.from('products').update(productData).eq('id', editingId);
-      if (error) alert(error.message); else alert("Updated!");
+      if (error) throw error;
+      alert("Updated! ✅");
     } else {
       const { error } = await supabase.from('products').insert([productData]);
-      if (error) alert(error.message); else alert("Created!");
+      if (error) throw error;
+      alert("Created! ✨");
     }
+
+    // 3. Reset state and REFRESH data (This unfreezes the UI)
     setEditingId(null);
-    setNewProduct({ name:'', price:'', description:'', long_description:'', image_url:'', ingredients:'', category: 'General', is_available: true });
-    fetchData();
+    setNewProduct({ name: '', price: '', description: '', image_url: '', ingredients: '', category: 'General', is_available: true });
+    fetchData(); 
+
+  } catch (error) {
+    alert("Error: " + error.message);
+  } finally {
+    setLoading(false);
   }
+}
 
   // --- EDIT PRODUCT FUNCTION ---
   const startEdit = (product) => {
-    setEditingId(product.id);
-    setNewProduct({
-      name: product.name,
-      price: product.price,
-      description: product.description || '',
-      long_description: product.long_description || '',
-      image_url: product.image_url || '',
-      ingredients: Array.isArray(product.ingredients) ? product.ingredients.join(', ') : (product.ingredients || ''),
-      category: product.category || 'General',
-      is_available: product.is_available !== undefined ? product.is_available : true
-    });
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  setEditingId(product.id);
+
+  // 1. Get ingredients from product
+  let rawIng = product.ingredients;
+
+  // 2. If it's a messy string, try to turn it into a real list first
+  if (typeof rawIng === 'string' && rawIng.startsWith('[')) {
+    try {
+      rawIng = JSON.parse(rawIng);
+      if (typeof rawIng === 'string') rawIng = JSON.parse(rawIng); // Handle double-wrapped
+    } catch (e) {
+      console.error("Cleaning messy string...");
+    }
+  }
+
+  // 3. Convert to a clean string for the input box (e.g., "Salt, Pepper")
+  const cleanIngredients = Array.isArray(rawIng) 
+    ? rawIng.join(', ') 
+    : (rawIng || "");
+
+  // 4. Fill the form state
+  setNewProduct({
+    name: product.name || "",
+    price: product.price || "",
+    description: product.description || "",
+    image_url: product.image_url || "",
+    ingredients: cleanIngredients,
+    category: product.category || "General",
+    is_available: product.is_available ?? true
+  });
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
 
   async function deleteProduct(id) {
     if (window.confirm("Delete this item?")) {
@@ -200,70 +228,38 @@ const getImageUrl = (product) => {
     }
   }
 
-// --- 1. CALCULATE REVENUE & BREAKDOWN ---
- const totalRevenue = orders.reduce((sum, order) => sum + (Number(order.total_amount) || 0), 0);
+  async function toggleAvailability(id, currentStatus) {
+    setProducts(prevProducts => 
+      prevProducts.map(p => p.id === id ? { ...p, is_available: !currentStatus } : p)
+    );
+    const { error } = await supabase.from('products').update({ is_available: !currentStatus }).eq('id', id);
+    if (error) { alert("Error: " + error.message); fetchData(); }
+  }
+
+  async function updateProductCategory(id, newCategory) {
+    const { error } = await supabase.from('products').update({ category: newCategory }).eq('id', id);
+    if (error) alert("Error: " + error.message); else fetchData();
+  }
+
+  // --- ANALYTICS ---
+  const totalRevenue = orders.reduce((sum, order) => sum + (Number(order.total_amount) || 0), 0);
   const totalOrders = orders.length;
   const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
-  // We calculate the breakdown regardless of who is logged in, 
-  // but we will hide it in the UI if they aren't the Super Admin.
   const revenueByBrand = {};
   const productSales = {};
 
   orders.forEach(order => {
-    // 1. Group Revenue by Brand
     const bId = order.brand_id || 'Unknown';
     revenueByBrand[bId] = (revenueByBrand[bId] || 0) + (Number(order.total_amount) || 0);
-
-    // 2. Group Sales by Product Name
     const items = Array.isArray(order.items) ? order.items : [];
     items.forEach(item => {
       productSales[item.name] = (productSales[item.name] || 0) + (item.quantity || 1);
     });
   });
 
-  const topProducts = Object.entries(productSales)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 5);
-
-  // Define isSuperAdmin clearly based on the profile state
+  const topProducts = Object.entries(productSales).sort((a, b) => b[1] - a[1]).slice(0, 5);
   const isSuperAdmin = userProfile?.brand_id === 'all';
-
-  // QUICK UPDATE FUNCTION
- async function toggleAvailability(id, currentStatus) {
-  // 1. UPDATE LOCALLY FIRST (Stops the layout shift/flicker)
-  setProducts(prevProducts => 
-    prevProducts.map(p => 
-      p.id === id ? { ...p, is_available: !currentStatus } : p
-    )
-  );
-
-  // 2. UPDATE DATABASE IN BACKGROUND
-  const { error } = await supabase
-    .from('products')
-    .update({ is_available: !currentStatus })
-    .eq('id', id);
-
-  if (error) {
-    alert("Error updating status: " + error.message);
-    // If it fails, re-fetch to fix the UI
-    fetchData(); 
-  }
-
-}
-
-  async function updateProductCategory(id, newCategory) {
-    const { error } = await supabase
-      .from('products')
-      .update({ category: newCategory })
-      .eq('id', id);
-
-    if (error) {
-      alert("Error updating category: " + error.message);
-    } else {
-      fetchData();
-    }
-  }
 
   if (loading) return <div className="p-20 text-center">Loading Dashboard...</div>;
 
@@ -283,12 +279,26 @@ return (
       {activeTab === 'products' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 animate-fade-in">
           <form onSubmit={handleSubmit} className="bg-white p-6 rounded-2xl shadow-lg h-fit space-y-4 border-2" style={{ borderColor: editingId ? brandConfig.primaryColor : 'transparent' }}>
-            <h3 className="text-xl font-bold">{editingId ? '📝 Edit Product' : '✨ Add New Product'}</h3>
+            <h3 className="text-xl font-bold">{editingId ? 'Edit Product' : 'Add New Product'}</h3>
             <div className="space-y-3">
-              <input type="text" placeholder="Name" className="w-full border p-3 rounded-xl focus:outline-none" required value={newProduct.name} onChange={e => setNewProduct({...newProduct, name: e.target.value})} />
+              <input 
+              id="name"
+              name="name"
+              type="text" 
+              value={newProduct.name || ""} 
+              onChange={e => setNewProduct({...newProduct, name: e.target.value})}
+              className="w-full border p-3 rounded-xl focus:outline-none transition-all" // transition is INSIDE quotes
+            />
               <input type="number" placeholder="Price (₦)" className="w-full border p-3 rounded-xl focus:outline-none" required value={newProduct.price} onChange={e => setNewProduct({...newProduct, price: e.target.value})} />
-              <textarea placeholder="Description" className="w-full border p-3 rounded-xl h-24 focus:outline-none" value={newProduct.description} onChange={e => setNewProduct({...newProduct, description: e.target.value})} />
-              <input type="text" placeholder="Ingredients (comma separated)" className="w-full border p-3 rounded-xl focus:outline-none" value={newProduct.ingredients} onChange={e => setNewProduct({...newProduct, ingredients: e.target.value})} />
+              <textarea 
+                id="description"
+                name="description"
+                value={newProduct.description || ""} 
+                onChange={e => setNewProduct({...newProduct, description: e.target.value})}
+                className="w-full border p-3 rounded-xl h-24 focus:outline-none transition-all" 
+              />
+              <input type="text"  placeholder="Ingredients (comma separated)" className="w-full border p-3 rounded-xl focus:outline-none" value={newProduct.ingredients || ""} // Use || "" to prevent null errors
+                onChange={e => setNewProduct({...newProduct, ingredients: e.target.value})}/>
             </div>
             <div className="border-2 border-dashed p-4 text-center rounded-2xl bg-gray-50 mt-4">
                <label className="cursor-pointer block">
@@ -303,6 +313,7 @@ return (
                     image_url: newProduct.image_url, 
                     brand_id: import.meta.env.VITE_BRAND 
                   })} 
+                  loading="lazy"
                   className="h-32 w-full object-contain rounded-lg mt-4 bg-white p-2 border" 
                   alt="preview" 
                 />
@@ -328,6 +339,7 @@ return (
                       {/* Grayscale if sold out */}
                       <img 
                         src={getImageUrl(p)} 
+                        loading="lazy"
                         className={`h-16 w-16 object-contain bg-gray-50 rounded-xl p-1 border ${!p.is_available ? 'grayscale opacity-50' : ''}`} 
                         alt={p.name} 
                       />
@@ -369,6 +381,11 @@ return (
                         <option value="Drinks">Drinks</option>
                         <option value="Snacks">Snacks</option>
                         <option value="Grocery">Grocery</option>
+                        <option value="Soap">Soap</option>
+                        <option value="Baking">Baking</option>
+                        <option value="Cooking Oil">Cooking Oil</option>
+                        <option value="Starter">Starter</option>
+                        <option value="Honey">Cooking Honey</option>
                       </select>
                     </div>
 

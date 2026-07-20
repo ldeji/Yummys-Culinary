@@ -138,6 +138,7 @@ export default function Menu({ addToCart }) {
                 <div className="w-full h-56 bg-gray-50 flex items-center justify-center p-6 overflow-hidden">
                   <img 
                     src={getImageUrl(item.image_url)} 
+                    loading="lazy"
                     alt={item.name} 
                     className="h-full w-auto object-contain transition duration-500 group-hover:scale-110" 
                   />
@@ -150,7 +151,7 @@ export default function Menu({ addToCart }) {
                       ₦{item.price?.toLocaleString()}
                     </span>
                   </div>
-                  <p className="text-gray-500 text-sm mb-4 line-clamp-2 leading-relaxed">{item.description}</p>
+                  <p className="text-gray-500 text-sm mb-4 line-clamp-2 leading-relaxed">{item.description || ""}</p>
                   <p style={{ color: brandConfig.primaryColor }} className="text-xs font-bold uppercase tracking-widest hover:underline">
                     View Details →
                   </p>
@@ -184,6 +185,7 @@ export default function Menu({ addToCart }) {
                 src={getImageUrl(selectedItem.image_url)} 
                 alt={selectedItem.name} 
                 className="max-w-full max-h-full object-contain drop-shadow-xl" 
+                loading="lazy"
               />
             </div>
 
