@@ -17,7 +17,7 @@ export default function Menu({ addToCart }) {
   // 1. FETCH PRODUCTS FROM SUPABASE
   useEffect(() => {
     async function fetchProducts() {
-      setLoading(true);
+      setLoading(true); // 1. Start Spinner
       try {
         const currentBrandID = import.meta.env.VITE_BRAND || 'yummys';
         
@@ -26,19 +26,19 @@ export default function Menu({ addToCart }) {
           .select('*')  
           .eq('brand_id', currentBrandID); 
 
-        if (error) throw error;
+        if (error) throw error; 
 
         setItems(data || []);
       } catch (error) {
         console.error("Critical Error:", error.message);
-        if (error.message.includes('fetch')) {
-          alert("The store server is currently waking up. Please refresh in a few seconds!");
-        }
-        setItems([]); 
+        // If it fails, show an alert so you know WHY on mobile
+        alert("Store busy. Please refresh: " + error.message);
       } finally {
-        setLoading(false);
+        // 2. THIS IS THE FIX: The spinner MUST stop no matter what happens
+        setLoading(false); 
       }
     }
+
     fetchProducts();
   }, []);
 

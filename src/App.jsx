@@ -21,7 +21,7 @@ function App() {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [lastOrderData, setLastOrderData] = useState(null);
 
-  // --- AUTH LOGIC ---
+  // --- AUTH LOGIC (With Stuck Session Fix) ---
   useEffect(() => {
     const getSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -36,8 +36,17 @@ function App() {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
-        const { data: profile } = await supabase.from('profiles').select('role').eq('id', session.user.id).single();
-        setUser({ ...session.user, role: profile?.role });
+        try {
+          const { data: profile, error } = await supabase.from('profiles').select('role').eq('id', session.user.id).single();
+          if (error) {
+            await supabase.auth.signOut();
+            setUser(null);
+          } else {
+            setUser({ ...session.user, role: profile?.role });
+          }
+        } catch (e) {
+          setUser(null);
+        }
       } else {
         setUser(null);
       }
@@ -140,50 +149,52 @@ function App() {
           </Routes>
         </main>
 
-        {/* --- FIXED FOOTER --- */}
         <footer style={{ backgroundColor: brandConfig.backColor }} className="text-white pt-24 pb-12">
           <div className="max-w-6xl mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-12">
             <div>
               <Link to="/"><img src={brandConfig.logo} className="h-16 w-16 rounded-full mb-4 object-cover" alt="logo" /></Link>
-              <p className="text-sm opacity-80">{brandConfig.name} - Excellence since 2024.</p>
+              <p className="text-sm opacity-80">{brandConfig.name} - Quality since 2024.</p>
             </div>
             <div>
               <h3 style={{ color: brandConfig.primaryColor }} className="font-bold text-lg mb-6 uppercase">Navigation</h3>
               <ul className="text-sm space-y-3 opacity-90">
                 <li><Link to="/" className="hover:underline transition-all">Home</Link></li>
                 <li><Link to="/menu" className="hover:underline transition-all">Shop</Link></li>
-                <li><Link to="/about" className="hover:underline transition-all">About</Link></li>
               </ul>
             </div>
             <div>
-              <h3 style={{ color: brandConfig.primaryColor }} className="font-bold text-lg mb-6 uppercase">Contact</h3>
-              <p className="text-sm opacity-90">Lagos, Nigeria</p>
-              <p className="text-sm opacity-90">+{brandConfig.whatsapp}</p>
+               <h3 style={{ color: brandConfig.primaryColor }} className="font-bold text-lg mb-6 uppercase">Contact</h3>
+               <p className="text-sm opacity-90">Lagos, Nigeria</p>
+               <p className="text-sm opacity-90">+{brandConfig.whatsapp}</p>
             </div>
             <div>
-              <h3 style={{ color: brandConfig.primaryColor }} className="font-bold text-lg mb-6 uppercase">Newsletter</h3>
-              <div className="flex">
-                <input type="text" style={{ borderColor: brandConfig.primaryColor }} className="p-3 w-full border-2 rounded-l-lg text-sm" placeholder="Email " />
-                <button style={{ backgroundColor: brandConfig.primaryColor }} className="px-5 rounded-r-lg font-bold hover:brightness-110 active:scale-95 transition-all">Go</button>
-              </div>
+               <h3 style={{ color: brandConfig.primaryColor }} className="font-bold text-lg mb-6 uppercase">Newsletter</h3>
+               <div className="flex">
+                 <input 
+                  type="text" 
+                  style={{ borderColor: brandConfig.primaryColor }}
+                  className="p-3 w-full bg-transparent text-white border-2 rounded-l-lg text-sm focus:outline-none placeholder:text-gray-400" 
+                  placeholder="Email" 
+                />
+                 <button style={{ backgroundColor: brandConfig.primaryColor }} className="px-5 rounded-r-lg font-bold hover:brightness-110 transition-all">Go</button>
+               </div>
             </div>
           </div>
         </footer>
 
-        {/* --- FIXED CART MODAL --- */}
         {isCartOpen && (
           <div className="fixed inset-0 z-[100] flex">
             <div className="hidden lg:flex flex-1 bg-black/80 items-center justify-center p-10" onClick={() => setIsCartOpen(false)}>
               <div className="max-w-2xl w-full" onClick={e => e.stopPropagation()}>
-                <h3 style={{ color: brandConfig.primaryColor }} className="text-3xl font-bold mb-6 text-center">Recommended for you</h3>
+                <h3 style={{ color: brandConfig.primaryColor }} className="text-3xl font-bold mb-6 text-center underline decoration-wavy">Top Recommended</h3>
                 <div className="grid grid-cols-2 gap-6">
                   {(brandConfig?.upsells || []).map((item) => (
-                    <div key={item.id} className="bg-white rounded-2xl p-4 flex items-center gap-4 shadow-xl">
-                      <img src={`${brandConfig.imageFolder}/${item.image}`} className="w-16 h-16 object-contain" alt={item.name} />
+                    <div key={item.id} className="bg-white rounded-2xl p-4 flex items-center gap-4 shadow-xl border border-white/10 hover:scale-105 transition-transform">
+                      <img src={`${brandConfig.imageFolder}/${item.image}`} className="w-16 h-16 object-contain bg-gray-50 p-2 rounded-xl" alt={item.name} />
                       <div>
                         <h4 className="font-bold text-gray-800 text-xs">{item.name}</h4>
                         <p style={{ color: brandConfig.primaryColor }} className="font-bold text-xs">₦{item.price.toLocaleString()}</p>
-                        <button onClick={() => addToCart(item)} style={{ backgroundColor: brandConfig.primaryColor }} className="mt-2 text-white px-3 py-1 rounded-lg text-[10px] font-bold">Add +</button>
+                        <button onClick={() => addToCart(item)} style={{ backgroundColor: brandConfig.primaryColor }} className="mt-2 text-white px-3 py-1 rounded-lg text-[10px] font-bold shadow-md active:scale-95 transition-all">Add +</button>
                       </div>
                     </div>
                   ))}
@@ -191,66 +202,64 @@ function App() {
               </div>
             </div>
 
-            <div style={{ backgroundColor: brandConfig.lightColor }} className="w-full max-w-md h-full shadow-2xl flex flex-col p-6 animate-slide-in relative">
-              <div className="flex justify-between items-center mb-6 border-b pb-4">
-                <h2 className="text-2xl font-bold text-gray-800">Your Order</h2>
-                <button onClick={() => setIsCartOpen(false)} className="text-2xl">✕</button>
+            <div style={{ backgroundColor: brandConfig.lightColor }} className="w-full max-w-md h-full shadow-2xl flex flex-col p-6 animate-slide-in relative border-l border-white/20">
+              <div className="flex justify-between items-center mb-6 border-b pb-4 border-black/5">
+                <h2 className="text-2xl font-black text-gray-800 uppercase tracking-tighter">Your Order</h2>
+                <button onClick={() => setIsCartOpen(false)} className="text-2xl hover:rotate-90 transition-transform">✕</button>
               </div>
-              <div className="flex-1 overflow-y-auto space-y-4 pr-2">
-                {cart.length === 0 ? <p className="text-center py-20 text-gray-400">Cart is empty</p> : cart.map((item) => (
-                  <div key={item.id} className="flex items-center justify-between bg-white p-3 rounded-2xl shadow-sm">
-                    <div className="flex items-center gap-3">
-                      <img src={item.image_url?.startsWith('http') ? item.image_url : `${brandConfig.imageFolder}/${item.image_url || item.image}`} className="w-14 h-14 object-contain bg-gray-50 rounded-xl" alt={item.name} />
+              <div className="flex-1 overflow-y-auto space-y-4 pr-2 custom-scrollbar">
+                {cart.length === 0 ? <p className="text-center py-20 text-gray-400 font-medium">Your cart is empty.</p> : cart.map((item) => (
+                  <div key={item.id} className="flex items-center justify-between bg-white p-4 rounded-3xl shadow-sm border border-black/5">
+                    <div className="flex items-center gap-4">
+                      <img src={item.image_url?.startsWith('http') ? item.image_url : `${brandConfig.imageFolder}/${item.image_url || item.image}`} className="w-14 h-14 object-contain bg-gray-50 rounded-2xl p-1" alt={item.name} />
                       <div>
-                        <h4 className="font-bold text-xs text-gray-800">{item.name}</h4>
-                        <div className="flex items-center gap-2 mt-1">
-                          <button onClick={() => updateQuantity(item.id, -1)} className="w-6 h-6 bg-gray-100 rounded-md font-bold">-</button>
-                          <span className="text-xs font-bold">{item.quantity}</span>
-                          <button onClick={() => updateQuantity(item.id, 1)} className="w-6 h-6 bg-gray-100 rounded-md font-bold">+</button>
+                        <h4 className="font-bold text-xs text-gray-800 leading-tight">{item.name}</h4>
+                        <div className="flex items-center gap-3 mt-2">
+                          <button onClick={() => updateQuantity(item.id, -1)} className="w-6 h-6 bg-gray-100 rounded-full font-bold flex items-center justify-center hover:bg-gray-200">-</button>
+                          <span className="text-xs font-black">{item.quantity}</span>
+                          <button onClick={() => updateQuantity(item.id, 1)} className="w-6 h-6 bg-gray-100 rounded-full font-bold flex items-center justify-center hover:bg-gray-200">+</button>
                         </div>
                       </div>
                     </div>
                     <div className="text-right">
-                      <p style={{ color: brandConfig.primaryColor }} className="font-bold text-sm text-gray-800">₦{(item.price * item.quantity).toLocaleString()}</p>
-                      <button onClick={() => removeFromCart(item.id)} className="text-[10px] text-red-500 underline font-bold">Remove</button>
+                      <p style={{ color: brandConfig.primaryColor }} className="font-bold text-sm">₦{(item.price * item.quantity).toLocaleString()}</p>
+                      <button onClick={() => removeFromCart(item.id)} className="text-[10px] text-red-400 font-bold hover:underline">Remove</button>
                     </div>
                   </div>
                 ))}
               </div>
-              <div className="mt-6 border-t pt-4">
-                <div className="flex justify-between text-xl font-black mb-4 text-gray-800">
-                  <span>Total:</span>
+              <div className="mt-6 border-t pt-6 border-black/5">
+                <div className="flex justify-between text-2xl font-black mb-6 text-gray-800 tracking-tighter">
+                  <span>TOTAL</span>
                   <span>₦{cartTotal.toLocaleString()}</span>
                 </div>
-                <button onClick={handleCheckout} style={{ backgroundColor: brandConfig.primaryColor }} className="w-full text-white py-4 rounded-2xl font-bold shadow-lg hover:brightness-110 transition-all active:scale-95">Checkout Now</button>
+                <button onClick={handleCheckout} style={{ backgroundColor: brandConfig.primaryColor }} className="w-full text-white py-5 rounded-3xl font-bold shadow-xl hover:brightness-110 transition-all active:scale-95 text-lg">Checkout Now</button>
               </div>
             </div>
           </div>
         )}
 
-        {/* --- SUCCESS MODAL --- */}
         {showSuccessModal && (
-          <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-            <div className="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl">
-              <div className="text-6xl mb-4 text-green-500">🎉</div>
-              <h2 className="text-2xl font-black text-gray-800 mb-2">Order Confirmed!</h2>
-              <p className="text-gray-500 text-sm mb-8 leading-relaxed">Payment was successful. Please click the button below to notify us on WhatsApp for priority processing.</p>
+          <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
+            <div className="bg-white rounded-[40px] p-10 max-w-sm w-full text-center shadow-2xl animate-scale-in">
+              <div className="text-7xl mb-6">✅</div>
+              <h2 className="text-3xl font-black text-gray-800 mb-2 tracking-tight">Confirmed!</h2>
+              <p className="text-gray-500 text-sm mb-10 leading-relaxed font-medium">Payment was successful. Please click below to send your order details to our WhatsApp team for processing.</p>
               <button 
                 onClick={() => {
                   sendWhatsAppNotification(lastOrderData.profile, lastOrderData.items, lastOrderData.total);
                   setShowSuccessModal(false);
                 }}
-                className="w-full bg-[#25D366] text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2 hover:brightness-110 transition-all active:scale-95"
+                className="w-full bg-[#25D366] text-white py-5 rounded-3xl font-bold flex items-center justify-center gap-3 hover:brightness-110 transition-all active:scale-95 shadow-lg shadow-green-200 text-lg"
               >
-                <FaWhatsapp size={20} /> Notify WhatsApp
+                <FaWhatsapp size={24} /> Send to WhatsApp
               </button>
-              <button onClick={() => setShowSuccessModal(false)} className="mt-4 text-gray-400 text-xs font-bold uppercase tracking-widest hover:text-gray-600 transition-colors">Skip for now</button>
+              <button onClick={() => setShowSuccessModal(false)} className="mt-6 text-gray-400 text-xs font-bold uppercase tracking-widest hover:text-gray-800 transition-colors">Maybe Later</button>
             </div>
           </div>
         )}
       </div>
     </BrowserRouter>
-  )
+  );
 }
-
 export default App;
