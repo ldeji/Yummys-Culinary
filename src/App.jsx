@@ -173,7 +173,7 @@ function App() {
                  <input 
                   type="text" 
                   style={{ borderColor: brandConfig.primaryColor }}
-                  className="p-3 w-full bg-transparent text-white border-2 rounded-l-lg text-sm focus:outline-none placeholder:text-gray-400" 
+                  className="p-3 w-full bg-transparent text-white border-y-2 border-l-2 rounded-l-lg text-sm focus:outline-none placeholder:text-gray-400" 
                   placeholder="Email" 
                 />
                  <button style={{ backgroundColor: brandConfig.primaryColor }} className="px-5 rounded-r-lg font-bold hover:brightness-110 transition-all">Go</button>
