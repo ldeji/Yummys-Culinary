@@ -107,6 +107,15 @@ export const pantryItems = [
     longDescription: "Buy in bulk and save...",
     ingredients: ["100% Local Flour"]
   },
+  {
+    id: 18,
+    name: " Pompeian Robust Extra Virgin Olive Oil ",
+    price: 57360,
+    image: "PompeianRobust.webp",
+    description: "18",
+    longDescription: "Pompeian Robust Extra Virgin Olive Oil is a premium quality olive oil that is perfect for cooking, baking, and dressing salads. It has a rich, robust flavor that enhances the taste of any dish.",
+    ingredients: ["Virgin Olive Oil"]
+  },
 ];
 
 // These are the upsell items that will be shown in the cart modal. It's different from the main pantry items.

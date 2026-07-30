@@ -21,7 +21,7 @@ function App() {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [lastOrderData, setLastOrderData] = useState(null);
 
-  // --- AUTH LOGIC (With Stuck Session Fix) ---
+  // --- AUTH LOGIC (Safe Version) ---
   useEffect(() => {
     const getSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -38,14 +38,16 @@ function App() {
       if (session?.user) {
         try {
           const { data: profile, error } = await supabase.from('profiles').select('role').eq('id', session.user.id).single();
+          
           if (error) {
-            await supabase.auth.signOut();
-            setUser(null);
+            console.error("Profile read error, but keeping user logged in:", error.message);
+            // REMOVED the aggressive signOut() here. We just set the user without a role temporarily.
+            setUser({ ...session.user, role: null });
           } else {
             setUser({ ...session.user, role: profile?.role });
           }
         } catch (e) {
-          setUser(null);
+          setUser(session.user);
         }
       } else {
         setUser(null);
@@ -149,38 +151,85 @@ function App() {
           </Routes>
         </main>
 
-        <footer style={{ backgroundColor: brandConfig.backColor }} className="text-white pt-24 pb-12">
-          <div className="max-w-6xl mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-12">
-            <div>
-              <Link to="/"><img src={brandConfig.logo} className="h-16 w-16 rounded-full mb-4 object-cover" alt="logo" /></Link>
-              <p className="text-sm opacity-80">{brandConfig.name} - Quality since 2024.</p>
-            </div>
-            <div>
-              <h3 style={{ color: brandConfig.primaryColor }} className="font-bold text-lg mb-6 uppercase">Navigation</h3>
-              <ul className="text-sm space-y-3 opacity-90">
-                <li><Link to="/" className="hover:underline transition-all">Home</Link></li>
-                <li><Link to="/menu" className="hover:underline transition-all">Shop</Link></li>
-              </ul>
-            </div>
-            <div>
-               <h3 style={{ color: brandConfig.primaryColor }} className="font-bold text-lg mb-6 uppercase">Contact</h3>
-               <p className="text-sm opacity-90">Lagos, Nigeria</p>
-               <p className="text-sm opacity-90">+{brandConfig.whatsapp}</p>
-            </div>
-            <div>
-               <h3 style={{ color: brandConfig.primaryColor }} className="font-bold text-lg mb-6 uppercase">Newsletter</h3>
-               <div className="flex">
-                 <input 
-                  type="text" 
-                  style={{ borderColor: brandConfig.primaryColor }}
-                  className="p-3 w-full bg-transparent text-white border-y-2 border-l-2 rounded-l-lg text-sm focus:outline-none placeholder:text-gray-400" 
-                  placeholder="Email" 
-                />
-                 <button style={{ backgroundColor: brandConfig.primaryColor }} className="px-5 rounded-r-lg font-bold hover:brightness-110 transition-all">Go</button>
-               </div>
+       <footer style={{ backgroundColor: brandConfig.backColor }} className="text-white pt-24 pb-12">
+        <div className="max-w-6xl mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-12">
+          <div>
+            <Link to="/">
+              <img
+                src={brandConfig.logo}
+                className="h-16 w-16 rounded-full mb-4 object-cover"
+                alt="logo"
+              />
+            </Link>
+            <p className="text-sm opacity-80">
+              {brandConfig.name} - Quality since 2024.
+            </p>
+          </div>
+
+          <div>
+            <h3
+              style={{ color: brandConfig.primaryColor }}
+              className="font-bold text-lg mb-6 uppercase"
+            >
+              Navigation
+            </h3>
+            <ul className="text-sm space-y-3 opacity-90">
+              <li><Link to="/" className="hover:underline transition-all">Home</Link></li>
+              <li><Link to="/menu" className="hover:underline transition-all">Shop</Link></li>
+            </ul>
+          </div>
+
+          <div>
+            <h3
+              style={{ color: brandConfig.primaryColor }}
+              className="font-bold text-lg mb-6 uppercase"
+            >
+              Contact
+            </h3>
+            <p className="text-sm opacity-90">Lagos, Nigeria</p>
+            <p className="text-sm opacity-90">+{brandConfig.whatsapp}</p>
+          </div>
+
+          <div>
+            <h3
+              style={{ color: brandConfig.primaryColor }}
+              className="font-bold text-lg mb-6 uppercase"
+            >
+              Newsletter
+            </h3>
+            <div className="flex">
+              <input
+                type="text"
+                style={{ borderColor: brandConfig.primaryColor }}
+                className="p-3 w-full bg-transparent text-white border-y-2 border-l-2 rounded-l-lg text-sm focus:outline-none placeholder:text-gray-400"
+                placeholder="Email"
+              />
+              <button
+                style={{ backgroundColor: brandConfig.primaryColor }}
+                className="px-5 rounded-r-lg font-bold hover:brightness-110 transition-all"
+              >
+                Go
+              </button>
             </div>
           </div>
-        </footer>
+        </div>
+
+        {/* Bottom Copyright */}
+        <div className="max-w-6xl mx-auto px-4 mt-16 pt-8 border-t border-white/10 text-center">
+          <p className="text-sm text-gray-300">
+            &copy; 2026 Pantry &amp; Co Inc. All rights reserved.
+          </p>
+          <p className="mt-2 text-sm text-gray-400">
+            Built by{" "}
+            <span
+              style={{ color: brandConfig.primaryColor }}
+              className="font-semibold"
+            >
+              Sculpt Face Studios
+            </span>
+          </p>
+        </div>
+      </footer>
 
         {isCartOpen && (
           <div className="fixed inset-0 z-[100] flex">

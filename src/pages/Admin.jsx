@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../config/supabaseClient';
 import { brandConfig } from '../config/brands';
 import { useNavigate } from 'react-router-dom';
-import imageCompression from 'browser-image-compression'; // 1. Ensure this is imported
+import imageCompression from 'browser-image-compression';
 
 export default function Admin({ user }) {
   const [activeTab, setActiveTab] = useState('products');
@@ -10,18 +10,16 @@ export default function Admin({ user }) {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
-  const [editingId, setEditingId] = useState(null); 
-  const navigate = useNavigate();
+  const [saving, setSaving] = useState(false); // FIXED: Added missing saving state
+  const [editingId, setEditingId] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
-
-  const [settings, setSettings] = useState({
-    hero_title: '', hero_subtitle: '', cta_button_text: '', about_story: ''
-  });
+  const [settings, setSettings] = useState({ hero_title: '', hero_subtitle: '', cta_button_text: '', about_story: '' });
+  const navigate = useNavigate();
 
   const [newProduct, setNewProduct] = useState({
     name: '', price: '', description: '', long_description: '', 
-    image_url: '', ingredients: '', 
-    category: 'General', is_available: true 
+    image_url: '', ingredients: '', category: 'General', 
+    is_available: true, brand_id: '' // <-- Added brand_id
   });
 
   useEffect(() => {
@@ -30,222 +28,215 @@ export default function Admin({ user }) {
 
   async function checkAdmin() {
     if (!user) { navigate('/login'); return; }
-    const currentBrand = import.meta.env.VITE_BRAND || 'yummys';
-    const { data: profile, error } = await supabase
-      .from('profiles')
-      .select('role, brand_id')
-      .eq('id', user.id)
-      .single();
-
-    if (error || !profile) {
-      console.error("Profile check failed");
-      navigate('/');
-      return;
-    }
-
-    const isSuperAdmin = profile.brand_id === 'all';
-    const isBrandOwner = profile.brand_id === currentBrand;
-
-    if (profile.role === 'admin' && (isSuperAdmin || isBrandOwner)) {
-      fetchData(); 
-    } else {
-      const brandMessage = isSuperAdmin ? "Super Admin" : profile.brand_id;
-      alert(`Access Denied: You are registered as a ${brandMessage} admin. This site is ${currentBrand}.`);
+    try {
+      const { data: profile, error } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+      if (profile?.role === 'admin') { 
+        setUserProfile(profile); 
+        await fetchData(profile); 
+      } else { 
+        navigate('/'); 
+      }
+    } catch (err) {
+      console.error("Admin check error", err);
       navigate('/');
     }
   }
 
-  async function fetchData() {
-    setLoading(true);
+  async function fetchData(currentProfile = userProfile) {
+    if (!currentProfile) return;
     try {
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('role, brand_id')
-        .eq('id', user.id)
-        .single();
-
-      if (profileError) throw profileError;
-      
-      setUserProfile(profile);
-      const isSuperAdmin = profile.brand_id === 'all';
       const currentSiteBrand = import.meta.env.VITE_BRAND || 'yummys';
-
-      let productQuery = supabase.from('products').select('*');
-      let orderQuery = supabase.from('orders').select('*');
-      let settingsQuery = supabase.from('site_settings').select('*').eq('brand_id', isSuperAdmin ? currentSiteBrand : profile.brand_id).single();
-
-      if (!isSuperAdmin) {
-        productQuery = productQuery.eq('brand_id', profile.brand_id);
-        orderQuery = orderQuery.eq('brand_id', profile.brand_id);
+      const isSuper = currentProfile.brand_id === 'all';
+      
+      let pQuery = supabase.from('products').select('*');
+      let oQuery = supabase.from('orders').select('*');
+      
+      if (!isSuper) {
+        pQuery = pQuery.eq('brand_id', currentProfile.brand_id);
+        oQuery = oQuery.eq('brand_id', currentProfile.brand_id);
       }
 
-      const [prodRes, ordRes, setRes] = await Promise.all([
-        productQuery,
-        orderQuery.order('created_at', { ascending: false }),
-        settingsQuery
+      const [pRes, oRes, sRes] = await Promise.all([
+        pQuery.order('id', { ascending: false }), 
+        oQuery.order('created_at', { ascending: false }),
+        supabase.from('site_settings').select('*').eq('brand_id', currentSiteBrand).single()
       ]);
 
-      setProducts(prodRes.data || []);
-      setOrders(ordRes.data || []);
-      if (setRes.data) setSettings(setRes.data);
-
-    } catch (error) {
-      console.error("Critical Dashboard Error:", error.message);
-      alert("Error loading dashboard: " + error.message);
-    } finally {
-      setLoading(false);
+      setProducts(pRes.data || []);
+      setOrders(oRes.data || []);
+      if (sRes.data) setSettings(sRes.data);
+    } catch (err) { 
+      console.error("Data Fetch Error:", err); 
+    } finally { 
+      setLoading(false); 
     }
   }
 
-  const getImageUrl = (product) => {
-    const url = product.image_url;
-    if (!url) return "https://via.placeholder.com/150";
-    if (url.startsWith('http')) return url;
-    const folder = product.brand_id === 'pantry-co' ? 'pantry' : 'yummys';
-    return `/images/${folder}/${url}`;
+  const getImageUrl = (p) => {
+    if (!p.image_url) return "https://via.placeholder.com/150";
+    if (p.image_url.startsWith('http')) return p.image_url;
+    return `/images/${p.brand_id === 'pantry-co' ? 'pantry' : 'yummys'}/${p.image_url}`;
   };
 
- // --- OPTIMIZED IMAGE UPLOAD WITH DEBUGGING ---
-async function handleImageUpload(e) {
-  const file = e.target.files[0];
-  if (!file) return;
+   async function handleImageUpload(e) {
+    const file = e.target.files[0];
+    if (!file) return;
 
-  try {
-    setUploading(true);
-    console.log("1. Trying direct upload (No compression)...");
-
-    const fileName = `${Date.now()}-${file.name}`;
-
-    const { data, error } = await supabase.storage
-      .from('product-images')
-      .upload(fileName, file); // Uploading the raw file directly
-
-    if (error) {
-      console.error("2. Supabase Error:", error);
-      alert("Upload failed: " + error.message);
-      return;
-    }
-
-    console.log("3. Success! Getting URL...");
-    const { data: urlData } = supabase.storage.from('product-images').getPublicUrl(fileName);
-    
-    setNewProduct({ ...newProduct, image_url: urlData.publicUrl });
-    alert("Image uploaded! ✅");
-
-  } catch (err) {
-    console.error("4. Javascript Error:", err);
-  } finally {
-    setUploading(false);
-  }
-}
-
-async function handleSubmit(e) {
-  e.preventDefault();
-  setLoading(true);
-
-  const brandId = import.meta.env.VITE_BRAND || 'yummys';
-
-  // 1. Clean the ingredients string back into a real Array
-  const ingredientsArray = typeof newProduct.ingredients === 'string'
-    ? newProduct.ingredients.split(',').map(i => i.trim()).filter(i => i !== "")
-    : [];
-
-  // 2. Prepare the payload
-  const productData = {
-    name: newProduct.name,
-    price: Number(newProduct.price),
-    description: newProduct.description,
-    image_url: newProduct.image_url,
-    ingredients: ingredientsArray, // Real Array []
-    category: newProduct.category,
-    is_available: newProduct.is_available,
-    brand_id: brandId
-  };
-
-  try {
-    if (editingId) {
-      const { error } = await supabase.from('products').update(productData).eq('id', editingId);
-      if (error) throw error;
-      alert("Updated! ✅");
-    } else {
-      const { error } = await supabase.from('products').insert([productData]);
-      if (error) throw error;
-      alert("Created! ✨");
-    }
-
-    // 3. Reset state and REFRESH data (This unfreezes the UI)
-    setEditingId(null);
-    setNewProduct({ name: '', price: '', description: '', image_url: '', ingredients: '', category: 'General', is_available: true });
-    fetchData(); 
-
-  } catch (error) {
-    alert("Error: " + error.message);
-  } finally {
-    setLoading(false);
-  }
-}
-
-  // --- EDIT PRODUCT FUNCTION ---
-  const startEdit = (product) => {
-  setEditingId(product.id);
-
-  // 1. Get ingredients from product
-  let rawIng = product.ingredients;
-
-  // 2. If it's a messy string, try to turn it into a real list first
-  if (typeof rawIng === 'string' && rawIng.startsWith('[')) {
     try {
-      rawIng = JSON.parse(rawIng);
-      if (typeof rawIng === 'string') rawIng = JSON.parse(rawIng); // Handle double-wrapped
-    } catch (e) {
-      console.error("Cleaning messy string...");
+      setUploading(true);
+      console.log("1. Starting image compression...");
+
+      // useWebWorker: false makes this more stable if the browser is struggling
+      const options = { maxSizeMB: 0.2, maxWidthOrHeight: 800, useWebWorker: false };
+      const compressed = await imageCompression(file, options);
+      const fileName = `${Date.now()}.webp`;
+
+      console.log("2. Sending to Supabase Cloud...");
+
+      // CREATE A TIMEOUT (If network drops, this kills the upload after 15 seconds)
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error("Network connection dropped. Please try again.")), 15000)
+      );
+
+      const uploadPromise = supabase.storage.from('product-images').upload(fileName, compressed);
+
+      // Race the upload against the timeout
+      const { data, error } = await Promise.race([uploadPromise, timeoutPromise]);
+
+      if (error) throw error;
+
+      console.log("3. Upload Success! Getting URL...");
+      const { data: urlData } = supabase.storage.from('product-images').getPublicUrl(fileName);
+      
+      setNewProduct(prev => ({ ...prev, image_url: urlData.publicUrl }));
+      alert("Image uploaded successfully! ✅");
+
+    } catch (err) {
+      console.error("Upload Error:", err);
+      alert("Upload failed: " + err.message);
+    } finally {
+      // THIS WILL ALWAYS RUN, EVEN IF THE NETWORK DROPS
+      setUploading(false);
+      console.log("4. Upload cycle finished, UI unlocked.");
     }
   }
 
-  // 3. Convert to a clean string for the input box (e.g., "Salt, Pepper")
-  const cleanIngredients = Array.isArray(rawIng) 
-    ? rawIng.join(', ') 
-    : (rawIng || "");
+  const startEdit = (p) => {
+    setEditingId(p.id);
+    
+    setNewProduct({
+      name: p.name || '',
+      price: p.price || '',
+      description: p.description || '',
+      long_description: p.long_description || '',
+      image_url: p.image_url || '',
+      category: p.category || 'General',
+      is_available: p.is_available ?? true,
+      ingredients: Array.isArray(p.ingredients) ? p.ingredients.join(', ') : (p.ingredients || ''),
+      brand_id: p.brand_id // CRITICAL: This ensures it doesn't get lost
+    });
+    
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
-  // 4. Fill the form state
-  setNewProduct({
-    name: product.name || "",
-    price: product.price || "",
-    description: product.description || "",
-    image_url: product.image_url || "",
-    ingredients: cleanIngredients,
-    category: product.category || "General",
-    is_available: product.is_available ?? true
-  });
+ async function handleSubmit(e) {
+    e.preventDefault();
+    if (saving) return; // Prevent double-clicking
+    setSaving(true);
+    
+    try {
+      console.log("1. Preparing data for ID:", editingId);
+      const currentSiteBrand = import.meta.env.VITE_BRAND || 'yummys';
+      
+      // Clean ingredients safely
+      const rawIng = newProduct.ingredients || "";
+      const ingArray = typeof rawIng === 'string' 
+        ? rawIng.split(',').map(i => i.trim()).filter(i => i !== "")
+        : rawIng;
 
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-}
+      // Build the EXACT payload safely
+      const payload = { 
+        name: (newProduct.name || "").trim(),
+        price: Number(newProduct.price || 0),
+        description: (newProduct.description || "").trim(),
+        image_url: newProduct.image_url || "",
+        ingredients: ingArray, 
+        category: newProduct.category || "General",
+        is_available: newProduct.is_available ?? true,
+        brand_id: editingId ? newProduct.brand_id : currentSiteBrand
+      };
+
+      if (newProduct.long_description) {
+        payload.long_description = newProduct.long_description.trim();
+      }
+
+      console.log("2. Sending payload to database:", payload);
+
+      // --- THE TIMEOUT TRICK ---
+      // This forces the app to stop waiting if Supabase hangs for more than 10 seconds
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error("Database connection timed out. Please try again.")), 10000)
+      );
+
+      let dbRequest;
+      if (editingId) {
+        dbRequest = supabase.from('products').update(payload).eq('id', editingId);
+      } else {
+        dbRequest = supabase.from('products').insert([payload]);
+      }
+
+      // Race the database request against the 10-second timeout
+      const { data, error } = await Promise.race([dbRequest, timeoutPromise]);
+
+      if (error) {
+        console.error("3. Supabase Update Error:", error);
+        throw error;
+      }
+
+      console.log("4. Save successful! Clearing form...");
+      alert(editingId ? "Product Updated Successfully! ✅" : "Product Created Successfully! ✨");
+
+      // Reset form
+      setEditingId(null);
+      setNewProduct({ name:'', price:'', description:'', long_description:'', image_url:'', ingredients:'', category:'General', is_available:true, brand_id:'' });
+      
+      // Refresh data in background (do not await so it doesn't freeze UI)
+      fetchData(userProfile); 
+      
+    } catch (error) {
+      console.error("CRITICAL ERROR:", error);
+      alert("Update Failed: " + error.message);
+    } finally {
+      console.log("5. Unlocking button...");
+      setSaving(false); // FORCES the "Saving..." text to disappear
+    }
+  }
 
   async function deleteProduct(id) {
-    if (window.confirm("Delete this item?")) {
-      await supabase.from('products').delete().eq('id', id);
-      fetchData();
+    if (window.confirm("Are you sure you want to delete this item?")) {
+      try {
+        await supabase.from('products').delete().eq('id', id);
+        await fetchData(userProfile); 
+      } catch (err) {
+        alert("Delete Error: " + err.message);
+      }
     }
   }
 
   async function toggleAvailability(id, currentStatus) {
-    setProducts(prevProducts => 
-      prevProducts.map(p => p.id === id ? { ...p, is_available: !currentStatus } : p)
-    );
-    const { error } = await supabase.from('products').update({ is_available: !currentStatus }).eq('id', id);
-    if (error) { alert("Error: " + error.message); fetchData(); }
+    setProducts(prev => prev.map(p => p.id === id ? { ...p, is_available: !currentStatus } : p));
+    await supabase.from('products').update({ is_available: !currentStatus }).eq('id', id);
   }
 
   async function updateProductCategory(id, newCategory) {
-    const { error } = await supabase.from('products').update({ category: newCategory }).eq('id', id);
-    if (error) alert("Error: " + error.message); else fetchData();
+    setProducts(prev => prev.map(p => p.id === id ? { ...p, category: newCategory } : p));
+    await supabase.from('products').update({ category: newCategory }).eq('id', id);
   }
 
-  // --- ANALYTICS ---
+  // ANALYTICS MATH
   const totalRevenue = orders.reduce((sum, order) => sum + (Number(order.total_amount) || 0), 0);
   const totalOrders = orders.length;
   const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
-
   const revenueByBrand = {};
   const productSales = {};
 
@@ -261,45 +252,38 @@ async function handleSubmit(e) {
   const topProducts = Object.entries(productSales).sort((a, b) => b[1] - a[1]).slice(0, 5);
   const isSuperAdmin = userProfile?.brand_id === 'all';
 
-  if (loading) return <div className="p-20 text-center">Loading Dashboard...</div>;
+  if (loading) return <div className="min-h-screen flex items-center justify-center font-bold text-xl text-gray-500">Loading Dashboard Data...</div>;
 
-return (
+  return (
     <div className="max-w-6xl mx-auto p-6 min-h-screen">
       <div className="flex justify-between items-center mb-10">
         <h1 className="text-4xl font-bold" style={{ color: brandConfig.primaryColor }}>Admin Panel</h1>
         <div className="flex gap-2 md:gap-4 overflow-x-auto pb-2">
-          <button onClick={() => setActiveTab('products')} className={`px-4 md:px-6 py-2 rounded-full font-bold transition whitespace-nowrap ${activeTab === 'products' ? 'bg-black text-white' : 'bg-gray-200 text-gray-600'}`}>Products</button>
-          <button onClick={() => setActiveTab('orders')} className={`px-4 md:px-6 py-2 rounded-full font-bold transition whitespace-nowrap ${activeTab === 'orders' ? 'bg-black text-white' : 'bg-gray-200 text-gray-600'}`}>Orders</button>
-          <button onClick={() => setActiveTab('analytics')} className={`px-4 md:px-6 py-2 rounded-full font-bold transition whitespace-nowrap ${activeTab === 'analytics' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-600'}`}>Analytics</button>
-          <button onClick={() => setActiveTab('settings')} className={`px-4 md:px-6 py-2 rounded-full font-bold whitespace-nowrap transition ${activeTab === 'settings' ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-600'}`}>Settings</button>
+          {['products', 'orders', 'analytics', 'settings'].map(tab => (
+            <button key={tab} type="button" onClick={() => setActiveTab(tab)} className={`px-4 md:px-6 py-2 rounded-full font-bold capitalize transition whitespace-nowrap ${activeTab === tab ? 'bg-black text-white' : 'bg-gray-200 text-gray-600'}`}>{tab}</button>
+          ))}
         </div>
       </div>
 
-      {/* --- PRODUCTS TAB --- */}
       {activeTab === 'products' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 animate-fade-in">
           <form onSubmit={handleSubmit} className="bg-white p-6 rounded-2xl shadow-lg h-fit space-y-4 border-2" style={{ borderColor: editingId ? brandConfig.primaryColor : 'transparent' }}>
-            <h3 className="text-xl font-bold">{editingId ? 'Edit Product' : 'Add New Product'}</h3>
+            <h3 className="text-xl font-bold">{editingId ? '📝 Edit Product' : '✨ Add New Product'}</h3>
+            
             <div className="space-y-3">
-              <input 
-              id="name"
-              name="name"
-              type="text" 
-              value={newProduct.name || ""} 
-              onChange={e => setNewProduct({...newProduct, name: e.target.value})}
-              className="w-full border p-3 rounded-xl focus:outline-none transition-all" // transition is INSIDE quotes
-            />
-              <input type="number" placeholder="Price (₦)" className="w-full border p-3 rounded-xl focus:outline-none" required value={newProduct.price} onChange={e => setNewProduct({...newProduct, price: e.target.value})} />
-              <textarea 
-                id="description"
-                name="description"
-                value={newProduct.description || ""} 
-                onChange={e => setNewProduct({...newProduct, description: e.target.value})}
-                className="w-full border p-3 rounded-xl h-24 focus:outline-none transition-all" 
-              />
-              <input type="text"  placeholder="Ingredients (comma separated)" className="w-full border p-3 rounded-xl focus:outline-none" value={newProduct.ingredients || ""} // Use || "" to prevent null errors
-                onChange={e => setNewProduct({...newProduct, ingredients: e.target.value})}/>
+              <label className="text-xs font-bold text-gray-500 uppercase">Product Name</label>
+              <input id="prod_name" name="prod_name" type="text" placeholder="Name" className="w-full border-2 p-3 rounded-xl focus:outline-none" required value={newProduct.name || ""} onChange={e => setNewProduct({...newProduct, name: e.target.value})} style={{ borderColor: brandConfig.primaryColor }} />
+              
+              <label className="text-xs font-bold text-gray-500 uppercase">Price (₦)</label>
+              <input id="prod_price" name="prod_price" type="number" placeholder="Price" className="w-full border-2 p-3 rounded-xl focus:outline-none" required value={newProduct.price || ""} onChange={e => setNewProduct({...newProduct, price: e.target.value})} style={{ borderColor: brandConfig.primaryColor }} />
+              
+              <label className="text-xs font-bold text-gray-500 uppercase">Description</label>
+              <textarea id="prod_desc" name="prod_desc" placeholder="Description" className="w-full border-2 p-3 rounded-xl h-24 focus:outline-none" value={newProduct.description || ""} onChange={e => setNewProduct({...newProduct, description: e.target.value})} style={{ borderColor: brandConfig.primaryColor }} />
+              
+              <label className="text-xs font-bold text-gray-500 uppercase">Ingredients (Comma Separated)</label>
+              <input id="prod_ing" name="prod_ing" type="text" placeholder="Ingredients" className="w-full border-2 p-3 rounded-xl focus:outline-none" value={newProduct.ingredients || ""} onChange={e => setNewProduct({...newProduct, ingredients: e.target.value})} style={{ borderColor: brandConfig.primaryColor }} />
             </div>
+            
             <div className="border-2 border-dashed p-4 text-center rounded-2xl bg-gray-50 mt-4">
                <label className="cursor-pointer block">
                   <p className="text-xs font-bold text-gray-500 uppercase mb-2">Product Photo</p>
@@ -309,94 +293,76 @@ return (
                   </div>
                </label>
                {newProduct.image_url && (
-                 <img src={getImageUrl({ 
-                    image_url: newProduct.image_url, 
-                    brand_id: import.meta.env.VITE_BRAND 
-                  })} 
-                  loading="lazy"
-                  className="h-32 w-full object-contain rounded-lg mt-4 bg-white p-2 border" 
-                  alt="preview" 
-                />
-              )}
+                 <img src={getImageUrl({ image_url: newProduct.image_url, brand_id: import.meta.env.VITE_BRAND })} className="h-32 w-full object-contain rounded-lg mt-4 bg-white p-2 border" alt="preview" />
+               )}
             </div>
-            <button type="submit" disabled={uploading} style={{ backgroundColor: brandConfig.primaryColor }} className="w-full text-white py-4 rounded-xl font-bold shadow-lg hover:brightness-110 disabled:opacity-50">
-              {editingId ? 'Update Product' : 'Save Product'}
+
+            <button type="submit" disabled={uploading || saving} style={{ backgroundColor: brandConfig.primaryColor }} className="w-full text-white py-4 rounded-xl font-bold shadow-lg hover:brightness-110 disabled:opacity-50 transition-all">
+              {saving ? 'Saving...' : editingId ? 'Update Product' : 'Save Product'}
             </button>
-            {editingId && (
-              <button type="button" onClick={() => { setEditingId(null); setNewProduct({name:'', price:'', description:'', long_description:'', image_url:'', ingredients:''}); }} className="w-full bg-gray-200 py-3 rounded-xl font-bold text-gray-600">Cancel</button>
+           {editingId && (
+            <button 
+              type="button" 
+              onClick={() => { 
+                // Reset all logic
+                setEditingId(null); 
+                setUploading(false); // Forces the upload spinner to stop
+                setSaving(false);    // Forces the save spinner to stop
+                
+                // Clear the form
+                setNewProduct({
+                  name: '', price: '', description: '', long_description: '', 
+                  image_url: '', ingredients: '', category: 'General', 
+                  is_available: true, brand_id: '' 
+                }); 
+              }} 
+                className="w-full bg-gray-200 py-3 rounded-xl font-bold text-gray-600 hover:bg-gray-300 transition-all"
+              >
+                Cancel Editing
+              </button>
             )}
           </form>
 
           <div className="lg:col-span-2 space-y-4">
-            <h3 className="font-bold text-gray-400 uppercase text-sm mb-4">Inventory ({products.length})</h3>
-            
-            {/* UPDATED PRODUCT CARDS WITH QUICK CONTROLS */}
-            <div className="grid grid-cols-1 gap-4">
-              {products.map(p => (
-                <div key={p.id} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-4 hover:shadow-md transition">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      {/* Grayscale if sold out */}
-                      <img 
-                        src={getImageUrl(p)} 
-                        loading="lazy"
-                        className={`h-16 w-16 object-contain bg-gray-50 rounded-xl p-1 border ${!p.is_available ? 'grayscale opacity-50' : ''}`} 
-                        alt={p.name} 
-                      />
-                      <div>
-                        <p className="font-bold text-gray-800">{p.name}</p>
-                        <p className="text-sm font-bold" style={{ color: brandConfig.primaryColor }}>₦{p.price.toLocaleString()}</p>
-                      </div>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-bold text-gray-400 uppercase text-sm">Inventory ({products.length})</h3>
+              <button type="button" onClick={() => fetchData(userProfile)} className="text-xs font-bold text-blue-500 hover:underline">Force Refresh</button>
+            </div>
+            {products.map(p => (
+              <div key={p.id} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <img src={getImageUrl(p)} className={`h-16 w-16 object-contain bg-gray-50 rounded-xl p-1 border ${!p.is_available ? 'grayscale opacity-50' : ''}`} alt="" />
+                    <div>
+                      <p className="font-bold text-gray-800">{p.name}</p>
+                      <p className="text-sm font-bold" style={{ color: brandConfig.primaryColor }}>₦{p.price.toLocaleString()}</p>
                     </div>
-
-                    {/* QUICK AVAILABILITY TOGGLE */}
-                    <button 
-          type="button" // <--- CRITICAL: Prevents form submission/jumps
-          onClick={(e) => {
-            e.preventDefault(); // Prevents any default browser scroll actions
-            toggleAvailability(p.id, p.is_available);
-          }}
-          className={`px-3 py-1 rounded-full text-[10px] font-black uppercase transition-all
-            ${p.is_available 
-              ? 'bg-green-100 text-green-600 hover:bg-green-200' 
-              : 'bg-red-100 text-red-600 hover:bg-red-200'}
-          `}
-        >
-          {p.is_available ? '● In Stock' : '○ Sold Out'}
-        </button>
                   </div>
-
-                  {/* QUICK CATEGORY & ACTIONS BAR */}
-                  <div className="flex items-center justify-between pt-3 border-t border-gray-50">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Cat:</span>
-                      <select 
-                        value={p.category || 'General'}
-                        onChange={(e) => updateProductCategory(p.id, e.target.value)}
-                        className="text-xs bg-gray-50 border-none rounded-md px-2 py-1 font-bold text-gray-600 focus:ring-1 focus:ring-gray-300 cursor-pointer"
-                      >
-                        <option value="General">General</option>
-                        <option value="Main Dish">Main Dish</option>
-                        <option value="Sides">Sides</option>
-                        <option value="Drinks">Drinks</option>
-                        <option value="Snacks">Snacks</option>
-                        <option value="Grocery">Grocery</option>
-                        <option value="Soap">Soap</option>
-                        <option value="Baking">Baking</option>
-                        <option value="Cooking Oil">Cooking Oil</option>
-                        <option value="Starter">Starter</option>
-                        <option value="Honey">Cooking Honey</option>
-                      </select>
-                    </div>
-
-                    <div className="flex gap-4">
-                      <button onClick={() => startEdit(p)} className="text-blue-500 text-xs font-bold hover:underline transition">Edit Info</button>
-                      <button onClick={() => deleteProduct(p.id)} className="text-red-400 text-xs font-bold hover:underline transition">Delete</button>
-                    </div>
+                  <button type="button" onClick={(e) => { e.preventDefault(); toggleAvailability(p.id, p.is_available); }} className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${p.is_available ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+                    {p.is_available ? '● In Stock' : '○ Sold Out'}
+                  </button>
+                </div>
+                <div className="flex items-center justify-between pt-3 border-t border-gray-50">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-gray-400 font-bold uppercase">Cat:</span>
+                    <select value={p.category || 'General'} onChange={(e) => updateProductCategory(p.id, e.target.value)} className="text-xs bg-gray-50 rounded-md px-2 py-1 font-bold text-gray-600 cursor-pointer">
+                      <option value="General">General</option>
+                      <option value="Main Dish">Main Dish</option>
+                      <option value="Sides">Sides</option>
+                      <option value="Drinks">Drinks</option>
+                      <option value="Toiletries">Toiletries</option>
+                      <option value="Beverages">Beverages</option>
+                      <option value="Cookings">Cookings</option>
+                      <option value="Cleaning">Cleaning</option>
+                    </select>
+                  </div>
+                  <div className="flex gap-4">
+                    <button type="button" onClick={() => startEdit(p)} className="text-blue-500 text-xs font-bold hover:underline">Edit Info</button>
+                    <button type="button" onClick={() => deleteProduct(p.id)} className="text-red-400 text-xs font-bold hover:underline">Delete</button>
                   </div>
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
           </div>
         </div>
       )}
@@ -404,43 +370,22 @@ return (
       {/* --- ORDERS TAB --- */}
       {activeTab === 'orders' && (
         <div className="max-w-4xl mx-auto space-y-6 animate-fade-in">
-          <h3 className="font-bold text-gray-400 uppercase text-sm mb-4 tracking-widest">Recent Transactions</h3>
           {orders.map(o => (
             <div key={o.id} className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex flex-col md:flex-row justify-between gap-6">
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-3">
-                  <span 
-                    className={`text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-tighter shadow-sm
-                      ${o.status === 'Completed' ? 'bg-green-100 text-green-700' : 
-                        o.status === 'Out for Delivery' ? 'bg-blue-100 text-blue-700' : 
-                        o.status === 'Preparing' ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-700'}
-                    `}
-                  >
+                  <span className={`text-[10px] font-bold px-3 py-1 rounded-full uppercase ${o.status === 'Completed' ? 'bg-green-100 text-green-700' : o.status === 'Out for Delivery' ? 'bg-blue-100 text-blue-700' : o.status === 'Preparing' ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-700'}`}>
                     {o.status || 'Paid'}
                   </span>
                   <p className="text-sm font-mono text-gray-400">ID: {o.id.toString().slice(0,8)}</p>
                 </div>
-                
                 <div className="space-y-1 mb-4">
                   {o.items.map((item, i) => (
-                    <p key={i} className="text-sm text-gray-700">
-                      <span className="font-bold" style={{ color: brandConfig.primaryColor }}>{item.quantity}x</span> {item.name}
-                    </p>
+                    <p key={i} className="text-sm text-gray-700"><span className="font-bold" style={{ color: brandConfig.primaryColor }}>{item.quantity}x</span> {item.name}</p>
                   ))}
                 </div>
-
                 <div className="mt-4 pt-4 border-t border-gray-50">
-                  <p className="text-[10px] font-bold text-gray-400 uppercase mb-2">Update Progress:</p>
-                  <select 
-                    value={o.status || 'Paid'}
-                    onChange={async (e) => {
-                      const newStatus = e.target.value;
-                      const { error } = await supabase.from('orders').update({ status: newStatus }).eq('id', o.id);
-                      if (!error) fetchData();
-                      else alert("Failed to update status");
-                    }}
-                    className="bg-gray-50 border border-gray-200 text-sm rounded-lg p-2 focus:outline-none cursor-pointer hover:border-gray-400 transition"
-                  >
+                  <select value={o.status || 'Paid'} onChange={async (e) => { const { error } = await supabase.from('orders').update({ status: e.target.value }).eq('id', o.id); if(!error) fetchData(userProfile); }} className="bg-gray-50 text-sm rounded-lg p-2 cursor-pointer">
                     <option value="Paid">Paid (New)</option>
                     <option value="Preparing">Preparing</option>
                     <option value="Out for Delivery">Out for Delivery</option>
@@ -449,15 +394,11 @@ return (
                   </select>
                 </div>
               </div>
-              
               <div className="md:text-right flex flex-col justify-between items-end">
                 <p className="text-xs text-gray-400">{new Date(o.created_at).toLocaleString()}</p>
                 <div>
                   <p className="text-2xl font-black" style={{ color: brandConfig.primaryColor }}>₦{o.total_amount.toLocaleString()}</p>
-                  <p className="text-[10px] text-gray-300 font-mono uppercase">Ref: {o.payment_reference}</p>
-                  {userProfile?.brand_id === 'all' && (
-                     <span className="text-[9px] bg-gray-100 px-2 py-0.5 rounded text-gray-400 uppercase font-bold">Brand: {o.brand_id}</span>
-                  )}
+                  {isSuperAdmin && <span className="text-[9px] bg-gray-100 px-2 py-0.5 rounded text-gray-400 uppercase font-bold">Brand: {o.brand_id}</span>}
                 </div>
               </div>
             </div>
@@ -470,39 +411,31 @@ return (
         <div className="space-y-8 animate-fade-in">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 flex flex-col">
-              <p className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-2">Total Revenue</p>
+              <p className="text-gray-400 text-xs font-bold uppercase mb-2">Total Revenue</p>
               <h2 className="text-4xl font-black" style={{ color: brandConfig.primaryColor }}>₦{totalRevenue.toLocaleString()}</h2>
               {isSuperAdmin && (
-                <>
-                  <p className="text-[10px] text-blue-500 font-bold mt-2 uppercase tracking-tighter">Combined Brand Earnings</p>
-                  <div className="mt-6 pt-4 border-t border-dashed border-gray-100 space-y-2">
-                    <p className="text-[10px] text-gray-400 font-bold uppercase mb-2">Earnings by Brand:</p>
-                    {Object.entries(revenueByBrand).map(([brandName, amount]) => (
-                      <div key={brandName} className="flex justify-between items-center bg-gray-50 p-3 rounded-xl border border-gray-100">
-                        <span className="text-[10px] font-black uppercase text-gray-500">
-                          {brandName === 'pantry-co' ? '📦 Pantry' : brandName === 'yummys' ? '🍴 Yummys' : brandName}
-                        </span>
-                        <span className="text-sm font-bold text-gray-800">₦{amount.toLocaleString()}</span>
-                      </div>
-                    ))}
-                  </div>
-                </>
+                <div className="mt-6 pt-4 border-t border-dashed border-gray-100 space-y-2">
+                  <p className="text-[10px] text-gray-400 font-bold uppercase mb-2">Earnings by Brand:</p>
+                  {Object.entries(revenueByBrand).map(([brandName, amount]) => (
+                    <div key={brandName} className="flex justify-between items-center bg-gray-50 p-3 rounded-xl">
+                      <span className="text-[10px] font-black uppercase text-gray-500">{brandName}</span>
+                      <span className="text-sm font-bold text-gray-800">₦{amount.toLocaleString()}</span>
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
             <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 h-fit">
-              <p className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-2">Total Orders</p>
+              <p className="text-gray-400 text-xs font-bold uppercase mb-2">Total Orders</p>
               <h2 className="text-4xl font-black text-gray-800">{totalOrders}</h2>
-              <p className="text-xs text-gray-400 mt-2">Completed sales</p>
             </div>
             <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 h-fit">
-              <p className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-2">Avg. Order Value</p>
+              <p className="text-gray-400 text-xs font-bold uppercase mb-2">Avg. Order Value</p>
               <h2 className="text-4xl font-black text-gray-800">₦{Math.round(averageOrderValue).toLocaleString()}</h2>
-              <p className="text-xs text-gray-400 mt-2">Per unique visit</p>
             </div>
           </div>
-
           <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 max-w-2xl">
-            <h3 className="font-bold text-lg mb-6 flex items-center gap-2"><span>🏆</span> Top Selling Items Across Brands</h3>
+            <h3 className="font-bold text-lg mb-6 flex items-center gap-2"><span>🏆</span> Top Selling Items</h3>
             <div className="space-y-4">
               {topProducts.length > 0 ? topProducts.map(([name, qty], index) => {
                 const itemBrand = products.find((p) => p.name === name)?.brand_id;
@@ -512,7 +445,7 @@ return (
                       <p className="font-bold text-gray-700">{name}</p>
                       <span className="text-[10px] uppercase font-extrabold px-2 py-0.5 rounded bg-gray-100 text-gray-400">{itemBrand || "Unknown"}</span>
                     </div>
-                    <span style={{ backgroundColor: brandConfig.lightColor, color: brandConfig.accentColor }} className="px-3 py-1 rounded-full text-xs font-black">{qty} Sold</span>
+                    <span style={{ backgroundColor: brandConfig.lightColor, color: brandConfig.primaryColor }} className="px-3 py-1 rounded-full text-xs font-black">{qty} Sold</span>
                   </div>
                 );
               }) : <p className="text-gray-400 italic">No sales data yet.</p>}
@@ -527,27 +460,31 @@ return (
           <form 
             onSubmit={async (e) => {
               e.preventDefault();
+              setSaving(true);
               const bId = userProfile?.brand_id === 'all' ? import.meta.env.VITE_BRAND : userProfile.brand_id;
               const { error } = await supabase.from('site_settings').upsert({ brand_id: bId, ...settings });
               if (!error) alert("Website updated successfully! 🚀");
               else alert(error.message);
+              setSaving(false);
             }}
             className="bg-white p-8 rounded-3xl shadow-lg space-y-6"
           >
             <h3 className="text-xl font-bold mb-4">Edit Website Content</h3>
             <div>
               <label className="block text-xs font-bold text-gray-400 uppercase mb-2">Hero Title</label>
-              <input type="text" value={settings.hero_title} onChange={e => setSettings({...settings, hero_title: e.target.value})} className="w-full border p-3 rounded-xl focus:outline-none" />
+              <input type="text" value={settings.hero_title || ""} onChange={e => setSettings({...settings, hero_title: e.target.value})} className="w-full border-2 p-3 rounded-xl focus:outline-none" style={{ borderColor: brandConfig.primaryColor }} />
             </div>
             <div>
               <label className="block text-xs font-bold text-gray-400 uppercase mb-2">Hero Subtitle</label>
-              <textarea value={settings.hero_subtitle} onChange={e => setSettings({...settings, hero_subtitle: e.target.value})} className="w-full border p-3 rounded-xl h-24 focus:outline-none" />
+              <textarea value={settings.hero_subtitle || ""} onChange={e => setSettings({...settings, hero_subtitle: e.target.value})} className="w-full border-2 p-3 rounded-xl h-24 focus:outline-none" style={{ borderColor: brandConfig.primaryColor }} />
             </div>
             <div>
               <label className="block text-xs font-bold text-gray-400 uppercase mb-2">About Our Story</label>
-              <textarea value={settings.about_story} onChange={e => setSettings({...settings, about_story: e.target.value})} className="w-full border p-3 rounded-xl h-32 focus:outline-none" />
+              <textarea value={settings.about_story || ""} onChange={e => setSettings({...settings, about_story: e.target.value})} className="w-full border-2 p-3 rounded-xl h-32 focus:outline-none" style={{ borderColor: brandConfig.primaryColor }} />
             </div>
-            <button style={{ backgroundColor: brandConfig.primaryColor }} className="w-full py-4 text-white rounded-xl font-bold shadow-lg hover:brightness-110 transition">Update Live Website</button>
+            <button type="submit" disabled={saving} style={{ backgroundColor: brandConfig.primaryColor }} className="w-full py-4 text-white rounded-xl font-bold shadow-lg hover:brightness-110 transition disabled:opacity-50">
+              {saving ? 'Updating Site...' : 'Update Live Website'}
+            </button>
           </form>
         </div>
       )}
