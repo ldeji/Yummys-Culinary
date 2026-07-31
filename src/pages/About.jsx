@@ -8,6 +8,7 @@ export default function About() {
   const [content, setContent] = useState(null);
   const [loading, setLoading] = useState(true);
 
+
   // Use the image from brandConfig or a default
   const aboutImage = brandConfig?.aboutImage || "/images/default-about.jpg";
 

@@ -14,44 +14,47 @@ export default function Menu({ addToCart }) {
   const navigate = useNavigate();
   const searchQuery = searchParams.get("search")?.toLowerCase() || "";
 
-  // 1. FETCH PRODUCTS FROM SUPABASE
+  // 1. FETCH PRODUCTS WITH SAFETY TIMEOUT (Prevents Infinite Spinning)
   useEffect(() => {
     async function fetchProducts() {
-      setLoading(true); // 1. Start Spinner
+      setLoading(true);
       try {
-        const currentBrandID = import.meta.env.VITE_BRAND || 'yummys';
-        
-        const { data, error } = await supabase  
-          .from('products') 
-          .select('*')  
-          .eq('brand_id', currentBrandID); 
+        const currentBrandID = import.meta.env.VITE_BRAND || "yummys";
 
-        if (error) throw error; 
+        // If Supabase doesn't respond in 4s, we stop waiting to prevent the UI freeze
+        const { data, error } = await Promise.race([
+          supabase.from("products").select("*").eq("brand_id", currentBrandID).order("id", { ascending: false }),
+          new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 4000))
+        ]);
 
+        if (error) throw error;
         setItems(data || []);
       } catch (error) {
-        console.error("Critical Error:", error.message);
-        // If it fails, show an alert so you know WHY on mobile
-        alert("Store busy. Please refresh: " + error.message);
+        console.error("Fetch error:", error);
       } finally {
-        // 2. THIS IS THE FIX: The spinner MUST stop no matter what happens
-        setLoading(false); 
+        setLoading(false);
       }
     }
 
     fetchProducts();
+
+    // Re-sync data when user comes back to the tab
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") fetchProducts();
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
   }, []);
 
-  // 2. IMAGE HELPER
   const getImageUrl = (url) => {
     if (!url) return "https://via.placeholder.com/150";
-    if (url.includes('supabase.co')) return url;
+    if (url.startsWith('http')) return url;
     const currentBrand = import.meta.env.VITE_BRAND || 'yummys';
     const folder = currentBrand === 'pantry-co' ? 'pantry' : 'yummys';
     return `/images/${folder}/${url}`;
   };
 
-  // 3. CATEGORY & FILTER LOGIC
   const categories = ["All", ...new Set(items.map(item => item.category).filter(Boolean))];
 
   const filteredItems = items.filter(item => {
@@ -71,30 +74,15 @@ export default function Menu({ addToCart }) {
 
   return (
     <section style={{ backgroundColor: brandConfig?.backColor || '#ffffff' }} className="p-6 md:p-10 max-w-7xl mx-auto min-h-screen">
-      
-      <SEO 
-        title={brandConfig.name === "Yummys" ? "Our Menu" : "Product Catalog"} 
-        description={brandConfig.name === "Yummys" 
-          ? `Explore the full menu at ${brandConfig.name}. Fresh local favorites and grilled delicacies.` 
-          : `Browse the premium selection at ${brandConfig.name}. Global pantry essentials delivered to you.`
-        } 
-      />
+      <SEO title={brandConfig.name === "Yummys" ? "Our Menu" : "Product Catalog"} />
 
-      {/* HEADER SECTION */}
       <div className="mb-10 text-center">
-        {searchQuery ? (
-          <>
-            <h2 className="text-2xl font-bold">Results for: <span style={{ color: brandConfig.primaryColor }}>"{searchQuery}"</span></h2>
-            <button onClick={() => navigate('/menu')} className="text-gray-400 underline text-sm mt-2">Clear search</button>
-          </>
-        ) : (
-          <h2 style={{ color: brandConfig?.accentColor || '#000000' }} className="text-3xl md:text-5xl font-black tracking-tight">
-            {brandConfig?.name === "Yummys" ? "Our Full Menu" : "Our Catalog"}
-          </h2>
-        )}
+        <h2 style={{ color: brandConfig?.accentColor || '#000000' }} className="text-3xl md:text-5xl font-black tracking-tight uppercase">
+          {brandConfig?.name === "Yummys" ? "Our Full Menu" : "Our Catalog"}
+        </h2>
       </div>
 
-      {/* CATEGORY FILTER BUTTONS */}
+      {/* FILTER BUTTONS */}
       <div className="flex gap-3 mb-10 overflow-x-auto pb-4 no-scrollbar justify-start md:justify-center">
         {categories.map(cat => (
           <button
@@ -105,125 +93,112 @@ export default function Menu({ addToCart }) {
               color: selectedCategory === cat ? 'white' : '#666',
               borderColor: selectedCategory === cat ? brandConfig.primaryColor : '#eee'
             }}
-            className="px-6 py-2 rounded-full text-sm font-bold border transition-all shadow-sm whitespace-nowrap hover:shadow-md active:scale-95"
+            className="px-6 py-2 rounded-full text-sm font-bold border transition-all active:scale-95 whitespace-nowrap"
           >
-            {cat === "All" ? "🛍️ All Items" : cat}
+            {cat === "All" ? "🛍️ All" : cat}
           </button>
         ))}
       </div>
       
-      {filteredItems.length === 0 ? (
-        <div className="text-center py-20 bg-white rounded-3xl shadow-inner border border-gray-100">
-          <div className="text-6xl mb-4">🔍</div>
-          <p className="text-2xl font-bold text-gray-800">No items available.</p>
-          <button onClick={() => {setSelectedCategory("All"); navigate('/menu');}} style={{ backgroundColor: brandConfig.primaryColor }} className="mt-6 px-8 py-3 text-white rounded-full font-bold shadow-lg">Refresh List</button>
-        </div>
-      ) : (
-        /* PRODUCT GRID */
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
-          {filteredItems.map((item) => (
+      {/* PRODUCT GRID */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
+        {filteredItems.map((item) => {
+          const isOutOfStock = item.stock_quantity <= 0 || !item.is_available;
+          const isLowStock = item.stock_quantity > 0 && item.stock_quantity <= 5;
+
+          return (
             <div 
               key={item.id} 
-              className={`group relative bg-white rounded-2xl shadow-md overflow-hidden flex flex-col border border-gray-100 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 ${!item.is_available ? 'opacity-75 grayscale-[0.5]' : ''}`}
+              className={`group relative bg-white rounded-3xl shadow-sm overflow-hidden flex flex-col border border-gray-100 transition-all duration-500 
+                ${isOutOfStock ? 'grayscale opacity-60 scale-[0.98]' : 'hover:shadow-xl hover:-translate-y-1'}`}
             >
-              {/* SOLD OUT BADGE */}
-              {!item.is_available && (
-                <div className="absolute top-4 left-4 z-10 bg-red-600 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-lg uppercase tracking-wider">
+              {/* BADGES */}
+              {isOutOfStock ? (
+                <div className="absolute top-4 left-4 z-10 bg-gray-800 text-white text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-tighter">
                   Sold Out
                 </div>
-              )}
+              ) : isLowStock ? (
+                <div className="absolute top-4 left-4 z-10 bg-orange-500 text-white text-[10px] font-black px-3 py-1.5 rounded-full uppercase animate-pulse">
+                  Only {item.stock_quantity} left
+                </div>
+              ) : null}
 
-              {/* CARD CONTENT */}
               <div onClick={() => setSelectedItem(item)} className="cursor-pointer flex-grow">
-                <div className="w-full h-56 bg-gray-50 flex items-center justify-center p-6 overflow-hidden">
+                <div className="w-full h-60 bg-gray-50 flex items-center justify-center p-6">
                   <img 
                     src={getImageUrl(item.image_url)} 
-                    loading="lazy"
                     alt={item.name} 
-                    className="h-full w-auto object-contain transition duration-500 group-hover:scale-110" 
+                    className="h-full w-auto object-contain transition duration-700 group-hover:rotate-3 group-hover:scale-110" 
                   />
                 </div>
                 
-                <div className="p-5">
+                <div className="p-6">
                   <div className="flex justify-between items-start mb-2">
-                    <h3 className="font-bold text-lg text-gray-800 leading-tight">{item.name}</h3>
-                    <span style={{ color: item.is_available ? brandConfig.lightColor : '#999' }} className="font-bold ml-2 whitespace-nowrap">
+                    <h3 className="font-black text-xl text-gray-800 uppercase tracking-tighter leading-none">{item.name}</h3>
+                    <span style={{ color: isOutOfStock ? '#999' : brandConfig.primaryColor }} className="font-black text-lg">
                       ₦{item.price?.toLocaleString()}
                     </span>
                   </div>
-                  <p className="text-gray-500 text-sm mb-4 line-clamp-2 leading-relaxed">{item.description || ""}</p>
-                  <p style={{ color: brandConfig.primaryColor }} className="text-xs font-bold uppercase tracking-widest hover:underline">
-                    View Details →
-                  </p>
+                  <p className="text-gray-500 text-sm line-clamp-2 leading-relaxed">{item.description}</p>
                 </div>
               </div>
 
-              {/* ACTION BUTTON */}
-              <div className="p-5 pt-0 mt-auto">
+              <div className="p-6 pt-0 mt-auto">
                 <button 
-                  disabled={!item.is_available}
+                  disabled={isOutOfStock}
                   onClick={(e) => { e.stopPropagation(); addToCart(item); }}
-                  style={{ backgroundColor: item.is_available ? brandConfig.primaryColor : '#D1D5DB' }}
-                  className="w-full text-white py-3 rounded-xl font-bold transition-all duration-200 shadow-md active:scale-95 disabled:cursor-not-allowed"
+                  style={{ backgroundColor: isOutOfStock ? '#E5E7EB' : brandConfig.primaryColor }}
+                  className={`w-full py-4 rounded-2xl font-black transition-all duration-300 text-sm uppercase tracking-widest
+                    ${isOutOfStock ? 'text-gray-400 cursor-not-allowed' : 'text-white shadow-lg active:scale-95'}`}
                 >
-                  {item.is_available ? 'Add to Cart' : 'Out of Stock'}
+                  {isOutOfStock ? 'Sold Out' : 'Add to Order'}
                 </button>
               </div>
             </div>
-          ))}
-        </div>
-      )}
+          );
+        })}
+      </div>
 
-      {/* PRODUCT DETAIL MODAL */}
+      {/* DETAIL MODAL */}
       {selectedItem && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white rounded-3xl shadow-2xl max-w-3xl w-full overflow-hidden flex flex-col md:flex-row relative animate-scale-in">
-            <button onClick={() => setSelectedItem(null)} className="absolute top-5 right-5 bg-white/80 backdrop-blur-md rounded-full p-2 shadow-md z-10 hover:bg-white transition">✕</button>
-
-            <div className="w-full md:w-1/2 h-72 md:h-auto bg-gray-100 flex items-center justify-center p-8">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[200] flex items-center justify-center p-4" onClick={() => setSelectedItem(null)}>
+          <div className="bg-white rounded-[40px] shadow-2xl max-w-4xl w-full overflow-hidden flex flex-col md:flex-row animate-scale-in" onClick={e => e.stopPropagation()}>
+            
+            <div className="w-full md:w-1/2 h-80 md:h-auto bg-gray-50 flex items-center justify-center p-10">
               <img 
                 src={getImageUrl(selectedItem.image_url)} 
                 alt={selectedItem.name} 
-                className="max-w-full max-h-full object-contain drop-shadow-xl" 
-                loading="lazy"
+                className={`max-w-full max-h-full object-contain drop-shadow-2xl ${selectedItem.stock_quantity <= 0 ? 'grayscale' : ''}`} 
               />
             </div>
 
-            <div className="w-full md:w-1/2 p-8 flex flex-col justify-between text-left">
+            <div className="w-full md:w-1/2 p-10 flex flex-col justify-between">
               <div>
-                <div className="flex items-center gap-2 mb-2">
-                   <span className="bg-gray-100 text-gray-500 text-[10px] font-bold px-2 py-1 rounded uppercase">{selectedItem.category}</span>
+                <div className="flex justify-between items-center mb-4">
+                   <span className="bg-gray-100 px-3 py-1 rounded-full text-[10px] font-black uppercase text-gray-400">{selectedItem.category}</span>
+                   <button onClick={() => setSelectedItem(null)} className="text-gray-300 hover:text-black text-xl">✕</button>
                 </div>
-                <h2 className="text-3xl font-black text-gray-800 mb-2">{selectedItem.name}</h2>
-                <span style={{ color: brandConfig.primaryColor }} className="text-2xl font-bold block mb-4">
-                  ₦{selectedItem.price?.toLocaleString()}
-                </span>
-                <p className="text-gray-600 mb-6 leading-relaxed text-sm md:text-base">{selectedItem.long_description || selectedItem.description}</p>
+                <h2 className="text-4xl font-black text-gray-900 uppercase tracking-tighter mb-2">{selectedItem.name}</h2>
+                <p className="text-gray-500 leading-relaxed mb-6">{selectedItem.long_description || selectedItem.description}</p>
                 
-                <h4 className="font-bold text-gray-800 mb-3 uppercase text-xs tracking-widest">
-                  {brandConfig.name === "Yummys" ? "Ingredients" : "Details"}
-                </h4>
-
-                <div className="flex flex-wrap gap-2 mb-8">
-                  {Array.isArray(selectedItem.ingredients) ? (
-                    selectedItem.ingredients.map((ing, index) => (
-                      <span key={index} style={{ backgroundColor: brandConfig.lightColor, color: brandConfig.accentColor }} className="text-[10px] font-bold px-3 py-1.5 rounded-full border border-black/5">
-                        {ing}
-                      </span>
-                    ))
-                  ) : (
-                    <span className="text-gray-500 text-sm">{selectedItem.ingredients || "No extra details."}</span>
-                  )}
+                {/* STOCK STATUS */}
+                <div className="mb-8">
+                   {selectedItem.stock_quantity <= 0 ? (
+                     <p className="text-red-500 font-black text-xs uppercase tracking-widest">❌ Out of Stock</p>
+                   ) : (
+                     <p className="text-green-500 font-black text-xs uppercase tracking-widest">✅ Ready to ship ({selectedItem.stock_quantity} units left)</p>
+                   )}
                 </div>
               </div>
 
               <button 
-                disabled={!selectedItem.is_available}
+                disabled={selectedItem.stock_quantity <= 0 || !selectedItem.is_available}
                 onClick={() => { addToCart(selectedItem); setSelectedItem(null); }}
-                style={{ backgroundColor: selectedItem.is_available ? brandConfig.primaryColor : '#D1D5DB' }}
-                className="w-full text-white py-4 rounded-2xl font-bold shadow-lg transition active:scale-95 disabled:cursor-not-allowed"
+                style={{ backgroundColor: (selectedItem.stock_quantity <= 0 || !selectedItem.is_available) ? '#F3F4F6' : brandConfig.primaryColor }}
+                className={`w-full py-5 rounded-[24px] font-black text-lg uppercase tracking-widest transition-all
+                  ${(selectedItem.stock_quantity <= 0 || !selectedItem.is_available) ? 'text-gray-300' : 'text-white shadow-xl active:scale-95'}`}
               >
-                {selectedItem.is_available ? `Add to Order - ₦${selectedItem.price?.toLocaleString()}` : 'Currently Unavailable'}
+                {selectedItem.stock_quantity <= 0 || !selectedItem.is_available ? 'Currently Unavailable' : `Add to Order - ₦${selectedItem.price?.toLocaleString()}`}
               </button>
             </div>
           </div>

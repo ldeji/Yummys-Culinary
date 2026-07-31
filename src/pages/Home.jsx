@@ -80,7 +80,9 @@ useEffect(() => {
           >
              Fast Delivery within Ikoyi & envrionments.
           </div>
-          
+
+              // HOME PAGE TITLE
+        <div style={{ "--brand-title-font": brandConfig.titleFont }}>  
         <h1 
         style={{ color: brandConfig.accentColor }}
         className="text-4xl md:text-7xl font-extrabold leading-tight mb-6"
@@ -90,6 +92,7 @@ useEffect(() => {
         <br />
         <span style={{ color: brandConfig.lightColor }}>We got you.</span>
       </h1>
+      </div>
 
       <p 
         style={{ color: brandConfig.accentColor }}
@@ -165,26 +168,6 @@ useEffect(() => {
         </div>
 
       </div>
-
-      {/* --- FLOATING WHATSAPP BUTTON --- */}
-    <a
-       href={`https://wa.me/${brandConfig.whatsapp}`}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="fixed bottom-8 right-8 z-[100] flex items-center justify-center group"
-    >
-      {/* Optional Tooltip: Appears on hover */}
-      <span className="absolute right-16 bg-white text-gray-800 text-xs font-bold px-3 py-2 rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap border border-gray-100">
-        Chat with us! 👋
-      </span>
-
-      {/* The Icon Circle */}
-      <div 
-        className="bg-[#25D366] text-white p-4 rounded-full shadow-2xl animate-bounce hover:animate-none hover:scale-110 transition-all duration-300"
-      >
-        <FaWhatsapp size={32} />
-      </div>
-    </a>
     </div>
   );
 }

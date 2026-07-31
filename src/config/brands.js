@@ -8,6 +8,9 @@ const brands = {
     logo: "/images/yummys/yummy.jpeg",
     imageFolder: "/images/yummys", // <--- Points to restaurant photos
     supportEmail: "support@yummys.com",
+    address: "123 Adebola Ojomu Street, Aguda, Lagos",
+    titleFont: "'Fredoka', sans-serif", // Playful & Rounded
+    web3FormsKey: import.meta.env.VITE_YUMMYS_WEB3_KEY, // Inject key here
     footerText: "© 2026 Yummys Restaurant",
     items: yummysItems, // Attach the restaurant data
     upsells: yummysUpsells, // Attach the upsell data
@@ -32,7 +35,10 @@ const brands = {
     name: "Pantry & Co.",
     logo: "/images/pantry/pantryLogo.webp",
     imageFolder: "/images/pantry", // <--- Points to dry goods photos
-    supportEmail: "info@pantryandco.com",
+    supportEmail: "Address: pantrygroceries@gmail.com",
+    address: "Suite 95, First Floor, Dolphin Plaza, Corporation Drive, Dolphin Estate, Ikoyi, Lagos",
+    titleFont: "'Playfair Display', serif", // Elegant & Premium
+    web3FormsKey: import.meta.env.VITE_PANTRY_WEB3_KEY, // Inject key here
     footerText: "© 2026 Pantry & Co",
     items: pantryItems,
     upsells: pantryUpsells,

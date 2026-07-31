@@ -2,12 +2,22 @@ import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
-
-// This will tell us in the browser console exactly what is wrong
-if (!supabaseUrl) console.error("DEBUG: VITE_SUPABASE_URL is missing!");
-if (!supabaseAnonKey) console.error("DEBUG: VITE_SUPABASE_ANON_KEY is missing!");
+// This identifies if we are yummys or pantry-co
+const brandID = import.meta.env.VITE_BRAND || 'default-brand';
 
 export const supabase = createClient(
-  supabaseUrl || 'https://placeholder.supabase.co', 
-  supabaseAnonKey || 'placeholder'
+  supabaseUrl, 
+  supabaseAnonKey,
+  {
+    auth: {
+      // THIS IS THE FIX: It creates a separate storage slot for each brand
+      storageKey: `sb-${brandID}-auth-token`, 
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true
+    },
+    global: {
+      headers: { 'x-brand-id': brandID }
+    }
+  }
 );
