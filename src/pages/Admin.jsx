@@ -116,6 +116,25 @@ export default function Admin({ user }) {
     } catch (err) { alert(err.message); } finally { setSaving(false); }
   }
 
+  // --- ORDER STATUS UPDATE ---
+  const handleStatusUpdate = async (orderId, newStatus) => {
+  try {
+    const { error } = await supabase
+      .from('orders')
+      .update({ status: newStatus }) // Ensure the column name is 'status' in Supabase
+      .eq('id', orderId);
+
+    if (error) throw error;
+    
+    // Refresh the local data so the UI reflects the change
+    fetchOrders(); 
+    alert(`Order updated to: ${newStatus}`);
+  } catch (error) {
+    console.error("Error updating status:", error.message);
+    alert("Failed to update status.");
+  }
+};
+
   const getImageUrl = (url) => {
     if (!url) return "https://via.placeholder.com/150";
     if (url.startsWith('http')) return url;
@@ -171,6 +190,23 @@ export default function Admin({ user }) {
               <input type="number" placeholder="Price" className="w-full bg-gray-50 border-none p-4 rounded-2xl font-bold text-sm" required value={newProduct.price} onChange={e => setNewProduct({...newProduct, price: e.target.value})} />
               <input type="number" placeholder="Stock" className="w-full bg-gray-50 border-none p-4 rounded-2xl font-bold text-sm" required value={newProduct.stock_quantity} onChange={e => setNewProduct({...newProduct, stock_quantity: e.target.value})} />
             </div>
+              
+              {/* CATEGORY DROPDOWN */}
+            <div className="flex flex-col gap-1">
+              <label className="text-[10px] font-black uppercase text-gray-400 ml-2">Category</label>
+              <select 
+                value={newProduct.category || ""} 
+                onChange={(e) => setNewProduct({...newProduct, category: e.target.value})}
+                className="w-full p-4 bg-gray-50 rounded-2xl border-none focus:ring-2 focus:ring-blue-500 text-sm font-bold appearance-none cursor-pointer"
+              >
+                <option value="">Select Category</option>
+                {brandConfig.categories.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
+                ))}
+              </select>
+            </div>
 
             <textarea placeholder="Description" className="w-full bg-gray-50 border-none p-4 rounded-2xl font-bold text-sm h-24" value={newProduct.description} onChange={e => setNewProduct({...newProduct, description: e.target.value})} />
             
@@ -180,54 +216,114 @@ export default function Admin({ user }) {
             {editingId && <button type="button" onClick={() => setEditingId(null)} className="w-full text-gray-400 font-bold text-xs uppercase">Cancel Edit</button>}
           </form>
 
-          <div className="lg:col-span-2 space-y-4">
-            {products.map(p => (
-              <div key={p.id} className="bg-white p-5 rounded-[32px] shadow-sm border border-gray-100 flex items-center justify-between">
-                <div className="flex items-center gap-5">
-                  <img src={getImageUrl(p.image_url)} className="h-16 w-16 object-contain rounded-2xl bg-gray-50" alt="" />
-                  <div>
-                    <h4 className="font-black text-sm uppercase tracking-tight">{p.name}</h4>
-                    <p className="font-bold text-xs" style={{ color: brandConfig.primaryColor }}>₦{p.price.toLocaleString()} • {p.stock_quantity} in stock</p>
+              {/* PRODUCTS LIST */}
+         <div className="lg:col-span-2 space-y-4">
+          {products.map(p => (
+            <div key={p.id} className="bg-white p-5 rounded-[32px] shadow-sm border border-gray-100 flex items-center justify-between">
+              <div className="flex items-center gap-5">
+                <img src={getImageUrl(p.image_url)} className="h-16 w-16 object-contain rounded-2xl bg-gray-50" alt="" />
+                <div>
+                  <h4 className="font-black text-sm uppercase tracking-tight">{p.name}</h4>
+                  
+                  <div className="flex items-center gap-2">
+                    <p className="font-bold text-xs" style={{ color: brandConfig.primaryColor }}>
+                      ₦{p.price.toLocaleString()} • {p.stock_quantity} in stock
+                    </p>
+                    
+                    {/* NEW: CATEGORY LABEL */}
+                    {p.category && (
+                      <span className="bg-gray-100 text-[9px] px-2 py-0.5 rounded-full font-black uppercase text-gray-400">
+                        {p.category}
+                      </span>
+                    )}
                   </div>
-                </div>
-                <div className="flex gap-2">
-                  <button onClick={() => { setEditingId(p.id); setNewProduct(p); window.scrollTo(0,0); }} className="p-3 bg-gray-50 rounded-xl text-blue-600 hover:bg-blue-100"><FaCog /></button>
-                  <button onClick={async () => { if(confirm("Delete?")) { await supabase.from('products').delete().eq('id', p.id); fetchData(); } }} className="p-3 bg-gray-50 rounded-xl text-red-500 hover:bg-red-100"><FaTrash /></button>
+                  
                 </div>
               </div>
-            ))}
-          </div>
+              <div className="flex gap-2">
+                <button onClick={() => { setEditingId(p.id); setNewProduct(p); window.scrollTo(0,0); }} className="p-3 bg-gray-50 rounded-xl text-blue-600 hover:bg-blue-100"><FaCog /></button>
+                <button onClick={async () => { if(confirm("Delete?")) { await supabase.from('products').delete().eq('id', p.id); fetchData(); } }} className="p-3 bg-gray-50 rounded-xl text-red-500 hover:bg-red-100"><FaTrash /></button>
+              </div>
+            </div>
+          ))}
+        </div>
         </div>
       )}
 
-      {/* 2. ORDERS TAB */}
-      {activeTab === 'orders' && (
-        <div className="space-y-6">
-          <div className="bg-white p-10 rounded-[40px] shadow-sm border border-gray-100 flex justify-between items-center">
-            <div>
-              <h3 className="text-gray-400 font-bold uppercase text-[10px] tracking-widest mb-1">Total Platform Revenue</h3>
-              <p className="text-5xl font-black tracking-tighter">₦{totalRevenue.toLocaleString()}</p>
+            {/* ORDERS TAB */}
+        {activeTab === 'orders' && (
+          <div className="space-y-6">
+            <div className="bg-white p-10 rounded-[40px] shadow-sm border border-gray-100 flex justify-between items-center">
+              <div>
+                <h3 className="text-gray-400 font-bold uppercase text-[10px] tracking-widest mb-1">Total Platform Revenue</h3>
+                <p className="text-5xl font-black tracking-tighter">₦{totalRevenue.toLocaleString()}</p>
+              </div>
+              <div className="bg-green-50 text-green-600 px-6 py-3 rounded-full font-black text-xs uppercase">{orders.length} Sales</div>
             </div>
-            <div className="bg-green-50 text-green-600 px-6 py-3 rounded-full font-black text-xs uppercase">{orders.length} Sales</div>
-          </div>
-          <div className="bg-white rounded-[40px] overflow-hidden border">
-            <table className="w-full text-left">
-              <thead className="bg-gray-50 text-[10px] font-black uppercase text-gray-400">
-                <tr><th className="p-6">Order Info</th><th className="p-6">Items</th><th className="p-6">Amount</th></tr>
-              </thead>
-              <tbody className="divide-y text-sm">
-                {orders.map(o => (
-                  <tr key={o.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="p-6 font-bold uppercase">#{o.id.toString().slice(0,8)}<br/><span className="text-[10px] text-gray-400 font-normal">{new Date(o.created_at).toLocaleDateString()}</span></td>
-                    <td className="p-6 text-xs text-gray-500">{o.items?.map(i => `${i.quantity}x ${i.name}`).join(', ')}</td>
-                    <td className="p-6 font-black">₦{o.total_amount?.toLocaleString()}</td>
+            
+            <div className="bg-white rounded-[40px] overflow-hidden border">
+              <table className="w-full text-left">
+                <thead className="bg-gray-50 text-[10px] font-black uppercase text-gray-400">
+                  <tr>
+                    <th className="p-6">Order Info</th>
+                    <th className="p-6">Items</th>
+                    <th className="p-6">Amount</th>
+                    <th className="p-6">Status Control</th> {/* New Column */}
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y text-sm">
+                  {orders.map(o => (
+                    <tr key={o.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="p-6 font-bold uppercase">
+                        #{o.id.toString().slice(0,8)}
+                        <br/>
+                        <span className="text-[10px] text-gray-400 font-normal">
+                          {new Date(o.created_at).toLocaleDateString()}
+                        </span>
+                      </td>
+                      
+                      <td className="p-6 text-xs text-gray-500">
+                        {o.items?.map(i => `${i.quantity}x ${i.name}`).join(', ')}
+                      </td>
+                      
+                      <td className="p-6 font-black text-gray-900">
+                        ₦{o.total_amount?.toLocaleString()}
+                      </td>
+
+                      {/* STATUS DROPDOWN COLUMN */}
+                      <td className="p-6">
+                        <select 
+                          value={o.status || "Pending"}
+                          onChange={async (e) => {
+                            const newStatus = e.target.value;
+                            const { error } = await supabase
+                              .from('orders')
+                              .update({ status: newStatus })
+                              .eq('id', o.id);
+                            
+                            if (!error) {
+                              // Call your fetch function here to refresh the UI
+                              if (typeof fetchData === 'function') fetchData();
+                              else if (typeof fetchOrders === 'function') fetchOrders();
+                            } else {
+                              alert("Error updating status");
+                            }
+                          }}
+                          className="bg-gray-50 border-none text-[10px] font-black uppercase py-2 px-3 rounded-xl focus:ring-2 focus:ring-blue-500 cursor-pointer outline-none"
+                        >
+                          <option value="Pending">⏳ Pending</option>
+                          <option value="Paid">💰 Paid</option>
+                          <option value="Out for delivery">🚚 Out for delivery</option>
+                          <option value="Completed">✅ Completed</option>
+                        </select>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
       {/* 3. ANALYTICS */}
       {activeTab === 'analytics' && (

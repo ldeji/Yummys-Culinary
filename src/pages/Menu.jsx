@@ -55,8 +55,15 @@ export default function Menu({ addToCart }) {
     return `/images/${folder}/${url}`;
   };
 
-  const categories = ["All", ...new Set(items.map(item => item.category).filter(Boolean))];
+const categories = [
+    "All", 
+    ...new Set([
+      ...(brandConfig.categories || []), 
+      ...items.map(item => item.category).filter(Boolean)
+    ])
+  ];
 
+  // 2. FILTER ITEMS (This is the part that was missing or broken)
   const filteredItems = items.filter(item => {
     const matchesSearch = (item.name || "").toLowerCase().includes(searchQuery) || 
                          (item.description || "").toLowerCase().includes(searchQuery);
@@ -161,10 +168,10 @@ export default function Menu({ addToCart }) {
 
       {/* DETAIL MODAL */}
       {selectedItem && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[200] flex items-center justify-center p-4" onClick={() => setSelectedItem(null)}>
-          <div className="bg-white rounded-[40px] shadow-2xl max-w-4xl w-full overflow-hidden flex flex-col md:flex-row animate-scale-in" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-green-500/20 backdrop-blur-md z-[200] flex items-center justify-center p-4" onClick={() => setSelectedItem(null)}>
+          <div className="bg-white rounded-[40px] shadow-2xl max-w-2xl w-full overflow-hidden flex flex-col md:flex-row animate-scale-in" onClick={e => e.stopPropagation()}>
             
-            <div className="w-full md:w-1/2 h-80 md:h-auto bg-gray-50 flex items-center justify-center p-10">
+            <div className="w-full md:w-1/2 h-80 md:h-auto bg-white flex items-center justify-center p-10">
               <img 
                 src={getImageUrl(selectedItem.image_url)} 
                 alt={selectedItem.name} 

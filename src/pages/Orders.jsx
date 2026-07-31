@@ -78,18 +78,30 @@ export default function Orders({ user }) {
                 <p className="text-sm font-mono">{order.id.slice(0, 8)}...</p>
               </div>
               
-              <div className="text-right flex flex-col items-end gap-2">
-                {/* --- LIVE STATUS BADGE FOR CUSTOMER --- */}
+               {/* Status Badge */}
+               <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold uppercase text-gray-400 tracking-widest">Order Status:</span>
                 <span 
-                  className={`text-[10px] font-bold px-3 py-1 rounded-full uppercase
-                    ${order.status === 'Completed' ? 'bg-green-100 text-green-700' : 
-                      order.status === 'Out for Delivery' ? 'bg-blue-100 text-blue-700' : 
-                      order.status === 'Preparing' ? 'bg-orange-100 text-orange-700' : 'bg-yellow-100 text-yellow-700'}
-                  `}
+                  style={{ 
+                    backgroundColor: 
+                      order.status === 'Completed' ? '#DEF7EC' : 
+                      order.status === 'Out for delivery' ? '#E1EFFE' : 
+                      order.status === 'Paid' ? '#FDF6B2' : '#F3F4F6',
+                    color: 
+                      order.status === 'Completed' ? '#03543F' : 
+                      order.status === 'Out for delivery' ? '#1E429F' : 
+                      order.status === 'Paid' ? '#723B10' : '#4B5563'
+                  }}
+                  className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter"
                 >
+                  {/* Icons for User View */}
+                  {order.status === 'Pending' && '⏳ '}
+                  {order.status === 'Paid' && '💰 '}
+                  {order.status === 'Out for delivery' && '🚚 '}
+                  {order.status === 'Completed' && '✅ '}
+                  
                   {order.status || 'Processing'}
                 </span>
-                <p className="text-xs text-gray-500">{new Date(order.created_at).toLocaleDateString()}</p>
               </div>
             </div>
               </div>

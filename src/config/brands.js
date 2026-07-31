@@ -13,6 +13,7 @@ const brands = {
     web3FormsKey: import.meta.env.VITE_YUMMYS_WEB3_KEY, // Inject key here
     footerText: "© 2026 Yummys Restaurant",
     items: yummysItems, // Attach the restaurant data
+    categories: "Rice, Starter, Finger Foods, Pasta, Breakfast, Drinks, Desserts",
     upsells: yummysUpsells, // Attach the upsell data
     aboutImage: "/images/yummys/cheffo.jpeg",
     ctaImage: "https://images.unsplash.com/photo-1552566626-52f8b828add9?w=1200", // People eating
@@ -37,10 +38,11 @@ const brands = {
     imageFolder: "/images/pantry", // <--- Points to dry goods photos
     supportEmail: "Address: pantrygroceries@gmail.com",
     address: "Suite 95, First Floor, Dolphin Plaza, Corporation Drive, Dolphin Estate, Ikoyi, Lagos",
-    titleFont: "'Playfair Display', serif", // Elegant & Premium
+    titleFont: "Gluten, cursive", // Elegant & Modern
     web3FormsKey: import.meta.env.VITE_PANTRY_WEB3_KEY, // Inject key here
     footerText: "© 2026 Pantry & Co",
     items: pantryItems,
+    categories: ["Cleaning", "Tea","Beverages", "Kitchen Consumables", "Dry Goods","Condiments"],
     upsells: pantryUpsells,
     aboutImage: "/images/pantry/PantryCollection.webp",
     ctaImage: "https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=1200", // People cooking
@@ -49,7 +51,7 @@ const brands = {
     accentColor: "#c5a47f",  // peach
     backColor: "#24150f", // dark-brown
     newColor: "#24150f", // green-300
-    whatsapp: "2348096528487", // added WhatsApp number for Pantry & Co.
+    whatsapp: "2348060335808", // added WhatsApp number for Pantry & Co.
     paystackKey: "pk_test_f5cf2aa44a08c1cf4af8e848b3967cce5285c637", // Add your key here
     currency: "NGN",
      heroImages: [
