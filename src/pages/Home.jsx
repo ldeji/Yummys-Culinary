@@ -56,7 +56,7 @@ useEffect(() => {
   return (
     <div 
        style={{ 
-        background: `linear-gradient(${isMobile ? 'to bottom' : 'to right'}, ${brandConfig.newColor} 65%, #dde8ff 100%)` 
+        background: `linear-gradient(${isMobile ? 'to bottom' : 'to right'}, ${brandConfig.primaryColor} 65%, ${brandConfig.accentColor} 100%)` 
       }}
       className="min-h-[85vh] flex items-center justify-center px-4 overflow-hidden"
     >
@@ -75,22 +75,22 @@ useEffect(() => {
         {/* --- LEFT SIDE: TEXT --- */}
         <div className="text-center mt-6 md:text-left z-10">
           <div 
-            style={{ color: brandConfig.primaryColor }}
-            className="inline-block bg-white/50 backdrop-blur-sm px-4 py-2 rounded-full text-sm font-bold mb-6 shadow-sm border border-white/20"
+            style={{ color: brandConfig.primaryColor, backgroundColor: brandConfig.accentColor }}
+            className="inline-block px-4 py-2 rounded-full text-sm font-bold mb-6 shadow-sm border border-white/20"
           >
-             Fast Delivery within Ikoyi & envrionments.
+             Fast Delivery.
           </div>
 
-              // HOME PAGE TITLE
-        <div style={{ "--brand-title-font": brandConfig.titleFont }}>  
+              
+        <div>  
         <h1 
-        style={{ color: brandConfig.accentColor }}
-        className="text-4xl md:text-7xl font-extrabold leading-tight mb-6"
+        style={{ color: brandConfig.accentColor, fontFamily: brandConfig.titleFont }}
+        className="text-4xl md:text-7xl leading-tight mb-6"
       >
         {/* 1. Try DB title. 2. If null, use Yummys fallback. 3. Else use Pantry fallback */}
         {content?.hero_title || (brandConfig.name === "Yummys" ? "Hungry?" : "Need Pantry Items?")} 
         <br />
-        <span style={{ color: brandConfig.lightColor }}>We got you.</span>
+        <span style={{ color: brandConfig.whiteColor }}>We got you.</span>
       </h1>
       </div>
 
@@ -108,7 +108,7 @@ useEffect(() => {
           <div className="flex gap-4 justify-center md:justify-start">
             <Link to="/menu">
              <button 
-               style={{ backgroundColor: brandConfig.primaryColor }}
+               style={{ backgroundColor: brandConfig.accentColor }}
               className="inline-block text-white px-8 py-3 rounded-xl font-bold hover:brightness-110 transition shadow-lg"
               >
                 {/* 1. Try DB text. 2. Fallback to 'Order Now' */}

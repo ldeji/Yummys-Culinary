@@ -80,7 +80,7 @@ const categories = [
   }
 
   return (
-    <section style={{ backgroundColor: brandConfig?.backColor || '#ffffff' }} className="p-6 md:p-10 max-w-7xl mx-auto min-h-screen">
+    <section style={{ backgroundColor: brandConfig?.primaryColor || '#ffffff' }} className="p-6 md:p-10 max-w-7xl mx-auto min-h-screen">
       <SEO title={brandConfig.name === "Yummys" ? "Our Menu" : "Product Catalog"} />
 
       <div className="mb-10 text-center">
@@ -96,7 +96,7 @@ const categories = [
             key={cat}
             onClick={() => setSelectedCategory(cat)}
             style={{ 
-              backgroundColor: selectedCategory === cat ? brandConfig.primaryColor : 'white',
+              backgroundColor: selectedCategory === cat ? brandConfig.accentColor : 'white',
               color: selectedCategory === cat ? 'white' : '#666',
               borderColor: selectedCategory === cat ? brandConfig.primaryColor : '#eee'
             }}
@@ -167,50 +167,83 @@ const categories = [
       </div>
 
       {/* DETAIL MODAL */}
-      {selectedItem && (
-        <div className="fixed inset-0 bg-green-500/20 backdrop-blur-md z-[200] flex items-center justify-center p-4" onClick={() => setSelectedItem(null)}>
-          <div className="bg-white rounded-[40px] shadow-2xl max-w-2xl w-full overflow-hidden flex flex-col md:flex-row animate-scale-in" onClick={e => e.stopPropagation()}>
-            
-            <div className="w-full md:w-1/2 h-80 md:h-auto bg-white flex items-center justify-center p-10">
-              <img 
-                src={getImageUrl(selectedItem.image_url)} 
-                alt={selectedItem.name} 
-                className={`max-w-full max-h-full object-contain drop-shadow-2xl ${selectedItem.stock_quantity <= 0 ? 'grayscale' : ''}`} 
-              />
-            </div>
+     {selectedItem && (
+  <div className="fixed inset-0 bg-green-500/20 backdrop-blur-md z-[200] flex items-center justify-center p-4" onClick={() => setSelectedItem(null)}>
+    {/* MODAL CONTAINER: Added max-h-[90vh] and overflow-hidden */}
+    <div 
+      className="relative bg-white rounded-[32px] shadow-2xl max-w-xl w-full max-h-[90vh] overflow-hidden flex flex-col md:flex-row animate-scale-in" 
+      onClick={e => e.stopPropagation()}
+    >
+      
+      {/* FIXED CLOSE BUTTON: Now absolute so it's always reachable */}
+      <button 
+        onClick={() => setSelectedItem(null)} 
+        className="absolute top-4 right-4 z-[210] bg-white/80 backdrop-blur-sm text-gray-500 hover:text-black p-2 rounded-full shadow-sm transition-colors"
+      >
+        <span className="text-xl">✕</span>
+      </button>
 
-            <div className="w-full md:w-1/2 p-10 flex flex-col justify-between">
-              <div>
-                <div className="flex justify-between items-center mb-4">
-                   <span className="bg-gray-100 px-3 py-1 rounded-full text-[10px] font-black uppercase text-gray-400">{selectedItem.category}</span>
-                   <button onClick={() => setSelectedItem(null)} className="text-gray-300 hover:text-black text-xl">✕</button>
-                </div>
-                <h2 className="text-4xl font-black text-gray-900 uppercase tracking-tighter mb-2">{selectedItem.name}</h2>
-                <p className="text-gray-500 leading-relaxed mb-6">{selectedItem.long_description || selectedItem.description}</p>
-                
-                {/* STOCK STATUS */}
-                <div className="mb-8">
-                   {selectedItem.stock_quantity <= 0 ? (
-                     <p className="text-red-500 font-black text-xs uppercase tracking-widest">❌ Out of Stock</p>
-                   ) : (
-                     <p className="text-green-500 font-black text-xs uppercase tracking-widest">✅ Ready to ship ({selectedItem.stock_quantity} units left)</p>
-                   )}
-                </div>
-              </div>
+      {/* IMAGE SECTION: Reduced mobile height from h-80 to h-56 */}
+      <div className="w-full md:w-2/5 h-56 md:h-auto bg-gray-50 flex items-center justify-center p-6">
+        <img 
+          src={getImageUrl(selectedItem.image_url)} 
+          alt={selectedItem.name} 
+          className={`max-w-full max-h-full object-contain drop-shadow-xl ${selectedItem.stock_quantity <= 0 ? 'grayscale' : ''}`} 
+        />
+      </div>
 
-              <button 
-                disabled={selectedItem.stock_quantity <= 0 || !selectedItem.is_available}
-                onClick={() => { addToCart(selectedItem); setSelectedItem(null); }}
-                style={{ backgroundColor: (selectedItem.stock_quantity <= 0 || !selectedItem.is_available) ? '#F3F4F6' : brandConfig.primaryColor }}
-                className={`w-full py-5 rounded-[24px] font-black text-lg uppercase tracking-widest transition-all
-                  ${(selectedItem.stock_quantity <= 0 || !selectedItem.is_available) ? 'text-gray-300' : 'text-white shadow-xl active:scale-95'}`}
-              >
-                {selectedItem.stock_quantity <= 0 || !selectedItem.is_available ? 'Currently Unavailable' : `Add to Order - ₦${selectedItem.price?.toLocaleString()}`}
-              </button>
+      {/* CONTENT SECTION: Added overflow-y-auto to allow scrolling inside if text is long */}
+      <div className="w-full md:w-3/5 p-6 md:p-8 flex flex-col justify-between overflow-y-auto">
+        <div className="mb-4">
+          <span className="inline-block bg-gray-100 px-3 py-1 rounded-full text-[10px] font-black uppercase text-gray-400 mb-2">
+            {selectedItem.category}
+          </span>
+          
+          {/* REDUCED NAME SIZE: From 4xl to 2xl, added break-words */}
+          <h2 className="text-xl md:text-2xl font-black text-gray-900 uppercase tracking-tight leading-tight mb-2 break-words">
+            {selectedItem.name}
+          </h2>
+          
+          <p className="text-gray-500 text-sm leading-relaxed mb-4">
+            {selectedItem.long_description || selectedItem.description}
+          </p>
+          
+          {/* INGREDIENTS SECTION */}
+          {selectedItem.ingredients && (
+            <div className="mb-4 p-3 bg-gray-50 rounded-xl border border-gray-100">
+              <h4 className="text-[9px] font-black uppercase text-gray-400 tracking-widest mb-1">Ingredients</h4>
+              <p className="text-gray-600 text-[11px] leading-relaxed italic">
+                {selectedItem.ingredients}
+              </p>
             </div>
+          )}
+          
+          {/* STOCK STATUS */}
+          <div className="mb-4">
+             {selectedItem.stock_quantity <= 0 ? (
+               <p className="text-red-500 font-black text-[10px] uppercase tracking-widest">❌ Out of Stock</p>
+             ) : (
+               <p className="text-green-500 font-black text-[10px] uppercase tracking-widest">✅ {selectedItem.stock_quantity} units left</p>
+             )}
           </div>
         </div>
-      )}
+
+        {/* BUTTON: More compact padding */}
+        <button 
+          disabled={selectedItem.stock_quantity <= 0 || !selectedItem.is_available}
+          onClick={() => { addToCart(selectedItem); setSelectedItem(null); }}
+          style={{ backgroundColor: (selectedItem.stock_quantity <= 0 || !selectedItem.is_available) ? '#F3F4F6' : brandConfig.primaryColor }}
+          className={`w-full py-4 rounded-xl font-black text-sm uppercase tracking-widest transition-all
+            ${(selectedItem.stock_quantity <= 0 || !selectedItem.is_available) ? 'text-gray-300' : 'text-white shadow-lg active:scale-95'}`}
+        >
+          {selectedItem.stock_quantity <= 0 || !selectedItem.is_available 
+            ? 'Unavailable' 
+            : `Add - ₦${selectedItem.price?.toLocaleString()}`}
+        </button>
+      </div>
+    </div>
+  </div>
+)}
     </section>
   );
 }

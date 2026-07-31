@@ -159,96 +159,115 @@ export default function Admin({ user }) {
         </div>
       </div>
 
-      {/* 1. PRODUCTS TAB (Restored with Image Upload) */}
-      {activeTab === 'products' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-          <form onSubmit={handleSubmit} className="bg-white p-8 rounded-[40px] shadow-xl border border-gray-100 h-fit space-y-5">
-            <h3 className="text-xl font-black uppercase">{editingId ? 'Update Product' : 'Create Product'}</h3>
-            
-            {/* IMAGE UPLOAD UI */}
-            <div className="relative w-full h-48 bg-gray-50 rounded-[32px] border-2 border-dashed border-gray-200 flex flex-col items-center justify-center overflow-hidden group">
-              {newProduct.image_url ? (
-                <>
-                  <img src={newProduct.image_url} className="w-full h-full object-contain p-4" alt="preview" />
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <label className="cursor-pointer bg-white text-black px-4 py-2 rounded-xl font-bold text-xs">Change Image</label>
-                  </div>
-                </>
-              ) : (
-                <div className="text-center">
-                  <FaCloudUploadAlt className="text-4xl text-gray-300 mx-auto mb-2" />
-                  <p className="text-[10px] font-bold text-gray-400 uppercase">Upload Product Image</p>
-                </div>
-              )}
-              <input type="file" accept="image/*" onChange={handleImageUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
-              {uploading && <div className="absolute inset-0 bg-white/80 flex items-center justify-center font-bold text-xs">Uploading...</div>}
+     {/* 1. PRODUCTS TAB (Restored with Image Upload & Ingredients) */}
+{activeTab === 'products' && (
+  <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+    <form onSubmit={handleSubmit} className="bg-white p-8 rounded-[40px] shadow-xl border border-gray-100 h-fit space-y-5">
+      <h3 className="text-xl font-black uppercase">{editingId ? 'Update Product' : 'Create Product'}</h3>
+      
+      {/* IMAGE UPLOAD UI */}
+      <div className="relative w-full h-48 bg-gray-50 rounded-[32px] border-2 border-dashed border-gray-200 flex flex-col items-center justify-center overflow-hidden group">
+        {newProduct.image_url ? (
+          <>
+            <img src={newProduct.image_url} className="w-full h-full object-contain p-4" alt="preview" />
+            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+              <label className="cursor-pointer bg-white text-black px-4 py-2 rounded-xl font-bold text-xs">Change Image</label>
             </div>
+          </>
+        ) : (
+          <div className="text-center">
+            <FaCloudUploadAlt className="text-4xl text-gray-300 mx-auto mb-2" />
+            <p className="text-[10px] font-bold text-gray-400 uppercase">Upload Product Image</p>
+          </div>
+        )}
+        <input type="file" accept="image/*" onChange={handleImageUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
+        {uploading && <div className="absolute inset-0 bg-white/80 flex items-center justify-center font-bold text-xs">Uploading...</div>}
+      </div>
 
-            <input type="text" placeholder="Product Name" className="w-full bg-gray-50 border-none p-4 rounded-2xl font-bold text-sm" required value={newProduct.name} onChange={e => setNewProduct({...newProduct, name: e.target.value})} />
-            
-            <div className="grid grid-cols-2 gap-4">
-              <input type="number" placeholder="Price" className="w-full bg-gray-50 border-none p-4 rounded-2xl font-bold text-sm" required value={newProduct.price} onChange={e => setNewProduct({...newProduct, price: e.target.value})} />
-              <input type="number" placeholder="Stock" className="w-full bg-gray-50 border-none p-4 rounded-2xl font-bold text-sm" required value={newProduct.stock_quantity} onChange={e => setNewProduct({...newProduct, stock_quantity: e.target.value})} />
-            </div>
-              
-              {/* CATEGORY DROPDOWN */}
-            <div className="flex flex-col gap-1">
-              <label className="text-[10px] font-black uppercase text-gray-400 ml-2">Category</label>
-              <select 
-                value={newProduct.category || ""} 
-                onChange={(e) => setNewProduct({...newProduct, category: e.target.value})}
-                className="w-full p-4 bg-gray-50 rounded-2xl border-none focus:ring-2 focus:ring-blue-500 text-sm font-bold appearance-none cursor-pointer"
-              >
-                <option value="">Select Category</option>
-                {brandConfig.categories.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {cat}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <textarea placeholder="Description" className="w-full bg-gray-50 border-none p-4 rounded-2xl font-bold text-sm h-24" value={newProduct.description} onChange={e => setNewProduct({...newProduct, description: e.target.value})} />
-            
-            <button type="submit" disabled={saving || uploading} style={{ backgroundColor: brandConfig.primaryColor }} className="w-full text-white py-5 rounded-2xl font-black uppercase tracking-widest shadow-lg hover:brightness-110 disabled:opacity-50">
-              {saving ? 'Syncing...' : 'Save to Cloud'}
-            </button>
-            {editingId && <button type="button" onClick={() => setEditingId(null)} className="w-full text-gray-400 font-bold text-xs uppercase">Cancel Edit</button>}
-          </form>
-
-              {/* PRODUCTS LIST */}
-         <div className="lg:col-span-2 space-y-4">
-          {products.map(p => (
-            <div key={p.id} className="bg-white p-5 rounded-[32px] shadow-sm border border-gray-100 flex items-center justify-between">
-              <div className="flex items-center gap-5">
-                <img src={getImageUrl(p.image_url)} className="h-16 w-16 object-contain rounded-2xl bg-gray-50" alt="" />
-                <div>
-                  <h4 className="font-black text-sm uppercase tracking-tight">{p.name}</h4>
-                  
-                  <div className="flex items-center gap-2">
-                    <p className="font-bold text-xs" style={{ color: brandConfig.primaryColor }}>
-                      ₦{p.price.toLocaleString()} • {p.stock_quantity} in stock
-                    </p>
-                    
-                    {/* NEW: CATEGORY LABEL */}
-                    {p.category && (
-                      <span className="bg-gray-100 text-[9px] px-2 py-0.5 rounded-full font-black uppercase text-gray-400">
-                        {p.category}
-                      </span>
-                    )}
-                  </div>
-                  
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <button onClick={() => { setEditingId(p.id); setNewProduct(p); window.scrollTo(0,0); }} className="p-3 bg-gray-50 rounded-xl text-blue-600 hover:bg-blue-100"><FaCog /></button>
-                <button onClick={async () => { if(confirm("Delete?")) { await supabase.from('products').delete().eq('id', p.id); fetchData(); } }} className="p-3 bg-gray-50 rounded-xl text-red-500 hover:bg-red-100"><FaTrash /></button>
-              </div>
-            </div>
+      {/* BASIC INFO */}
+      <input type="text" placeholder="Product Name" className="w-full bg-gray-50 border-none p-4 rounded-2xl font-bold text-sm" required value={newProduct.name} onChange={e => setNewProduct({...newProduct, name: e.target.value})} />
+      
+      <div className="grid grid-cols-2 gap-4">
+        <input type="number" placeholder="Price" className="w-full bg-gray-50 border-none p-4 rounded-2xl font-bold text-sm" required value={newProduct.price} onChange={e => setNewProduct({...newProduct, price: e.target.value})} />
+        <input type="number" placeholder="Stock" className="w-full bg-gray-50 border-none p-4 rounded-2xl font-bold text-sm" required value={newProduct.stock_quantity} onChange={e => setNewProduct({...newProduct, stock_quantity: e.target.value})} />
+      </div>
+        
+      {/* CATEGORY DROPDOWN */}
+      <div className="flex flex-col gap-1">
+        <label className="text-[10px] font-black uppercase text-gray-400 ml-2">Category</label>
+        <select 
+          value={newProduct.category || ""} 
+          onChange={(e) => setNewProduct({...newProduct, category: e.target.value})}
+          className="w-full p-4 bg-gray-50 rounded-2xl border-none focus:ring-2 focus:ring-blue-500 text-sm font-bold appearance-none cursor-pointer"
+        >
+          <option value="">Select Category</option>
+          {brandConfig.categories.map((cat) => (
+            <option key={cat} value={cat}>
+              {cat}
+            </option>
           ))}
+        </select>
+      </div>
+
+      {/* INGREDIENTS SECTION (Added Here) */}
+      <div className="flex flex-col gap-1">
+        <label className="text-[10px] font-black uppercase text-gray-400 ml-2">Ingredients</label>
+        <textarea 
+          placeholder="List ingredients separated by commas..." 
+          className="w-full bg-gray-50 border-none p-4 rounded-2xl font-bold text-sm h-24" 
+          value={newProduct.ingredients || ""} 
+          onChange={e => setNewProduct({...newProduct, ingredients: e.target.value})} 
+        />
+      </div>
+
+      {/* DESCRIPTION */}
+      <div className="flex flex-col gap-1">
+        <label className="text-[10px] font-black uppercase text-gray-400 ml-2">Product Description</label>
+        <textarea 
+          placeholder="Enter product details..." 
+          className="w-full bg-gray-50 border-none p-4 rounded-2xl font-bold text-sm h-24" 
+          value={newProduct.description} 
+          onChange={e => setNewProduct({...newProduct, description: e.target.value})} 
+        />
+      </div>
+      
+      <button type="submit" disabled={saving || uploading} style={{ backgroundColor: brandConfig.primaryColor }} className="w-full text-white py-5 rounded-2xl font-black uppercase tracking-widest shadow-lg hover:brightness-110 disabled:opacity-50">
+        {saving ? 'Syncing...' : 'Save to Cloud'}
+      </button>
+      {editingId && <button type="button" onClick={() => { setEditingId(null); setNewProduct({}); }} className="w-full text-gray-400 font-bold text-xs uppercase">Cancel Edit</button>}
+    </form>
+
+    {/* PRODUCTS LIST */}
+    <div className="lg:col-span-2 space-y-4">
+      {products.map(p => (
+        <div key={p.id} className="bg-white p-5 rounded-[32px] shadow-sm border border-gray-100 flex items-center justify-between">
+          <div className="flex items-center gap-5">
+            <img src={getImageUrl(p.image_url)} className="h-16 w-16 object-contain rounded-2xl bg-gray-50" alt="" />
+            <div>
+              <h4 className="font-black text-sm uppercase tracking-tight">{p.name}</h4>
+              
+              <div className="flex items-center gap-2">
+                <p className="font-bold text-xs" style={{ color: brandConfig.primaryColor }}>
+                  ₦{p.price.toLocaleString()} • {p.stock_quantity} in stock
+                </p>
+                
+                {p.category && (
+                  <span className="bg-gray-100 text-[9px] px-2 py-0.5 rounded-full font-black uppercase text-gray-400">
+                    {p.category}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <button onClick={() => { setEditingId(p.id); setNewProduct(p); window.scrollTo(0,0); }} className="p-3 bg-gray-50 rounded-xl text-blue-600 hover:bg-blue-100"><FaCog /></button>
+            <button onClick={async () => { if(confirm("Delete?")) { await supabase.from('products').delete().eq('id', p.id); fetchData(); } }} className="p-3 bg-gray-50 rounded-xl text-red-500 hover:bg-red-100"><FaTrash /></button>
+          </div>
         </div>
-        </div>
-      )}
+      ))}
+    </div>
+  </div>
+)}
 
             {/* ORDERS TAB */}
         {activeTab === 'orders' && (
@@ -342,7 +361,22 @@ export default function Admin({ user }) {
           <div className="bg-black text-white p-10 rounded-[40px] relative overflow-hidden">
              <FaMoneyBillWave className="absolute -right-10 -bottom-10 text-white/5 text-[180px]" />
              <h3 className="text-gray-500 font-bold uppercase text-[10px] mb-4">Saas Billing</h3>
-             <p className="text-2xl font-bold leading-tight">Monthly revenue share is active. Ensure all brand admins settle their commission by the 30th.</p>
+             <p className="text-2xl font-bold leading-tight">Monthly revenue share is active. To ensure brand admin settle their dues by the 30th of each month.</p>
+             <p className="text-2xl font-bold leading-tight">
+                Contact our project developer for inquiries.
+              </p> 
+
+              <p style={{ color: brandConfig.accentColor }} className="mt-4 text-[10px] uppercase tracking-widest">
+                <a 
+                  href="https://wa.me/2348057080703?text=Hello%20Lateef,%20I'm%20reaching%20out%20regarding%20the%20project" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  style={{ color: brandConfig.accentColor }} 
+                  className="font-bold hover:underline transition-all"
+                >
+                  Lateef Peleowo
+                </a>
+              </p>
           </div>
         </div>
       )}

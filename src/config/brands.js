@@ -23,6 +23,7 @@ const brands = {
     primaryColor: "#EAB308", // yellow-500
     lightColor: "#EAB308",   // yellow-500
     accentColor: "#E5E7EB",  // gray-200
+    whiteColor: "#ffffff", // white
     backColor: "#111827", // dark-gray-900
     newColor: "blue", // dark-gray-900
      heroImages: [
@@ -35,10 +36,10 @@ const brands = {
   "pantry-co": {
     name: "Pantry & Co.",
     logo: "/images/pantry/pantryLogo.webp",
+    titleFont: "'Lilita', cursive", // Elegant & Friendly
     imageFolder: "/images/pantry", // <--- Points to dry goods photos
     supportEmail: "Address: pantrygroceries@gmail.com",
     address: "Suite 95, First Floor, Dolphin Plaza, Corporation Drive, Dolphin Estate, Ikoyi, Lagos",
-    titleFont: "Gluten, cursive", // Elegant & Modern
     web3FormsKey: import.meta.env.VITE_PANTRY_WEB3_KEY, // Inject key here
     footerText: "© 2026 Pantry & Co",
     items: pantryItems,
@@ -46,11 +47,12 @@ const brands = {
     upsells: pantryUpsells,
     aboutImage: "/images/pantry/PantryCollection.webp",
     ctaImage: "https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=1200", // People cooking
-    primaryColor:  "#4a6d43", // green-700
-    lightColor: "#d40785",   // fushia
-    accentColor: "#c5a47f",  // peach
+    primaryColor: "#14532d", // green-700
+    lightColor: "#16a34a",   // fushia
+    accentColor: "#c5a47f", // gold color
     backColor: "#24150f", // dark-brown
     newColor: "#24150f", // green-300
+    whiteColor: "#ffffff", // white
     whatsapp: "2348060335808", // added WhatsApp number for Pantry & Co.
     paystackKey: "pk_test_f5cf2aa44a08c1cf4af8e848b3967cce5285c637", // Add your key here
     currency: "NGN",
@@ -58,7 +60,11 @@ const brands = {
       { id: 1, img: "/images/pantry/NesquikChocolate.webp", blob: "#86EFAC" }, // green-300
       { id: 2, img: "/images/pantry/PancakeMix.webp", blob: "#86EFAC" },
       { id: 3, img: "/images/pantry/BarillaPasta.webp", blob: "#DCFCE7" }, // green-100
-      { id: 4, img: "/images/pantry/QuakerQuickOne-MinuteOats.webp", blob: "#86EFAC" }
+      { id: 4, img: "/images/pantry/QuakerQuickOne-MinuteOats.webp", blob: "#86EFAC" },
+      { id: 5, img: "/images/pantry/GoyaAdobo.webp", blob: "#86EFAC" },
+      { id: 6, img: "/images/pantry/Colgate.webp", blob: "#86EFAC" },
+      { id: 7, img: "/images/pantry/Fabuloso.webp", blob: "#86EFAC" },
+      { id: 8, img: "/images/pantry/Knorr.webp", blob: "#86EFAC" }
     ]
   }
 };

@@ -213,19 +213,19 @@ function App() {
         </a>
 
         {/* --- FOOTER SECTION --- */}
-        <footer style={{ backgroundColor: brandConfig.backColor }} className="text-white pt-24 pb-12">
+        <footer style={{ backgroundColor: brandConfig.primaryColor }} className="text-white pt-24 pb-12">
           <div className="max-w-6xl mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-12">
             <div>
               <Link to="/"><img src={brandConfig.logo} className="h-16 w-16 rounded-full mb-4 object-cover" alt="logo"/></Link>
-              <h4 className="font-bold text-lg mb-2">{brandConfig.name}</h4>
-              <p className="text-xs opacity-70 leading-relaxed max-w-[200px]">
+              <h4 style={{ color: brandConfig.accentColor }}className="font-bold text-lg mb-2">{brandConfig.name}</h4>
+              <p style={{ color: brandConfig.accentColor }} className="text-xs opacity-70 leading-relaxed max-w-[200px]">
                 {brandConfig.address || "Lagos, Nigeria."}
               </p>
             </div>
             
             <div>
-              <h3 style={{ color: brandConfig.primaryColor }} className="font-bold text-lg mb-6 uppercase tracking-widest">Explore</h3>
-              <ul className="text-sm space-y-3 opacity-90">
+              <h3 style={{ color: brandConfig.accentColor }} className="font-bold text-lg mb-6 uppercase tracking-widest">Explore</h3>
+              <ul style={{ color: brandConfig.accentColor }}className="text-sm space-y-3 opacity-90">
                 <li><Link to="/" className="hover:underline">Home</Link></li>
                 <li><Link to="/menu" className="hover:underline">Shop Menu</Link></li>
               </ul>
@@ -234,12 +234,12 @@ function App() {
                             
               {/* Phone Link */}
             <div>   
-              <h3 style={{ color: brandConfig.primaryColor }} className="font-bold text-lg mb-6 uppercase tracking-widest">Support</h3>
-              <p className="text-sm opacity-90 mb-1"><a href={`tel:+${brandConfig.whatsapp.replace(/\D/g, '')}`}> +{brandConfig.whatsapp}</a></p>
+              <h3 style={{ color: brandConfig.accentColor }} className="font-bold text-lg mb-6 uppercase tracking-widest">Support</h3>
+              <p style={{ color: brandConfig.accentColor }}className="text-sm opacity-90 mb-1"><a href={`tel:+${brandConfig.whatsapp.replace(/\D/g, '')}`}> +{brandConfig.whatsapp}</a></p>
               
 
               {/* Email Link */}
-              <p className="text-sm opacity-90 lowercase">
+              <p style={{ color: brandConfig.accentColor }}className="text-sm opacity-90 lowercase">
                 <a 
                   href={`mailto:${brandConfig.supportEmail || `hello@${brandConfig.name.toLowerCase()}.com`}`}
                   className="hover:underline"
@@ -250,7 +250,7 @@ function App() {
             </div>
 
             <div>
-              <h3 style={{ color: brandConfig.primaryColor }} className="font-bold text-lg mb-6 uppercase tracking-widest">Newsletter</h3>
+              <h3 style={{ color: brandConfig.accentColor }} className="font-bold text-lg mb-6 uppercase tracking-widest">Newsletter</h3>
               <form className="flex flex-col gap-2" onSubmit={handleSubmit}>
         {/* Anti-Spam Honeypot (Required by Web3Forms for security) */}
         <input type="checkbox" name="botcheck" className="hidden" style={{ display: 'none' }} />
@@ -261,13 +261,13 @@ function App() {
             name="email" // Web3Forms will capture this automatically
             required
             placeholder="Your Email"
-            className="p-3 w-full bg-transparent border-y-2 border-l-2 rounded-l-lg text-sm border-white/20 focus:outline-none" 
+           style={{ borderColor: brandConfig.accentColor }} className="p-3 w-full bg-transparent border-y-2 border-l-2 rounded-l-lg text-sm focus:outline-none" 
           />
           <button 
             type="submit"
             disabled={status === "loading"}
             style={{ 
-                backgroundColor: brandConfig.primaryColor,
+                backgroundColor: brandConfig.accentColor,
                 fontFamily: brandConfig.titleFont 
             }} 
             className="px-5 rounded-r-lg font-bold hover:brightness-110 transition-all disabled:opacity-50"
@@ -292,12 +292,25 @@ function App() {
           </div>
 
           <div className="max-w-6xl mx-auto px-4 mt-16 pt-8 border-t border-white/10 text-center">
-            <p className="text-[10px] text-gray-400 uppercase tracking-widest">
+            <p style={{ color: brandConfig.accentColor }}className="text-[10px] uppercase tracking-widest">
               © {new Date().getFullYear()} {brandConfig.name} All rights reserved.
             </p>
-            <p className="mt-4 text-[10px] uppercase tracking-widest text-gray-500">
-              Built by <span style={{ color: brandConfig.primaryColor }} className="font-bold">Lateef Peleowo</span>
+            <p style={{ color: brandConfig.accentColor }}className="mt-4 text-[10px] uppercase tracking-widest">
+              Built by  <p style={{ color: brandConfig.accentColor }}className="mt-4 text-[10px] uppercase tracking-widest">
+              <a 
+                href="https://lateefpeleowo.vercel.app/Portfolio.html" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                style={{ color: brandConfig.accentColor }} 
+                className="font-bold hover:underline transition-all"
+              >
+                Lateef Peleowo
+              </a>
             </p>
+            </p>
+
+             
+
           </div>
         </footer>
 

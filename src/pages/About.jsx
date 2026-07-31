@@ -38,9 +38,9 @@ export default function About() {
       <SEO title="About Us" />
       
       {/* --- HERO SECTION --- */}
-      <section className="py-20 px-4 bg-gray-900 text-center text-white">
+      <section style={{ backgroundColor: brandConfig.primaryColor }} className="py-20 px-4 text-center text-white">
         <h1 className="text-4xl md:text-5xl font-extrabold mb-4">
-          More Than Just <span style={{ color: brandConfig.primaryColor }}>
+          More Than Just <span style={{ color: brandConfig.accentColor }}>
              {brandConfig.name === "Yummys" ? "Food." : "Ingredients."}
            </span>
         </h1>
