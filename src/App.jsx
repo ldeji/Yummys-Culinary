@@ -185,7 +185,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Auth />} />
-            <Route path="/menu" element={<Menu addToCart={addToCart} />} />
+            <Route path="/menu" element={<Menu addToCart={addToCart} cart={cart} />} />
             <Route path="/about" element={<About />} />
             <Route path="/profile" element={<Profile user={user} />} />
             <Route path="/orders" element={<Orders user={user} />} />
@@ -234,7 +234,7 @@ function App() {
                             
               {/* Phone Link */}
             <div>   
-              <h3 style={{ color: brandConfig.accentColor }} className="font-bold text-lg mb-6 uppercase tracking-widest">Support</h3>
+              <h3 style={{ color: brandConfig.accentColor }} className="font-bold text-lg mb-6 uppercase tracking-widest">Contact Us</h3>
               <p style={{ color: brandConfig.accentColor }}className="text-sm opacity-90 mb-1"><a href={`tel:+${brandConfig.whatsapp.replace(/\D/g, '')}`}> +{brandConfig.whatsapp}</a></p>
               
 
@@ -291,27 +291,32 @@ function App() {
             </div>
           </div>
 
-          <div className="max-w-6xl mx-auto px-4 mt-16 pt-8 border-t border-white/10 text-center">
-            <p style={{ color: brandConfig.accentColor }}className="text-[10px] uppercase tracking-widest">
-              © {new Date().getFullYear()} {brandConfig.name} All rights reserved.
-            </p>
-            <p style={{ color: brandConfig.accentColor }}className="mt-4 text-[10px] uppercase tracking-widest">
-              Built by  <p style={{ color: brandConfig.accentColor }}className="mt-4 text-[10px] uppercase tracking-widest">
-              <a 
-                href="https://lateefpeleowo.vercel.app/Portfolio.html" 
-                target="_blank" 
-                rel="noopener noreferrer"
+            <div className="max-w-6xl mx-auto px-4 mt-16 pt-8 border-t border-white/10 text-center">
+              {/* Copyright Line */}
+              <p 
                 style={{ color: brandConfig.accentColor }} 
-                className="font-bold hover:underline transition-all"
+                className="text-[10px] uppercase tracking-widest"
               >
-                Lateef Peleowo
-              </a>
-            </p>
-            </p>
+                © {new Date().getFullYear()} {brandConfig.name} All rights reserved.
+              </p>
 
-             
-
-          </div>
+              {/* Developer Line - Cleaned and Fixed */}
+              <p 
+                style={{ color: brandConfig.accentColor }} 
+                className="mt-4 text-[10px] uppercase tracking-widest"
+              >
+                Built by{' '}
+                <a 
+                  href="https://wa.me/2348057080703?text=Hello%20Lateef,%20I'm%20reaching%20out%20regarding%20the%20project" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="font-bold hover:underline transition-all"
+                  style={{ color: brandConfig.accentColor }}
+                >
+                  Lateef Peleowo
+                </a>
+              </p>
+            </div>
         </footer>
 
         {/* --- SUCCESS WHATSAPP MODAL --- */}

@@ -53,7 +53,7 @@ const brands = {
     backColor: "#24150f", // dark-brown
     newColor: "#24150f", // green-300
     whiteColor: "#ffffff", // white
-    whatsapp: "2348060335808", // added WhatsApp number for Pantry & Co.
+    whatsapp: "2348035304415", // added WhatsApp number for Pantry & Co.
     paystackKey: "pk_test_f5cf2aa44a08c1cf4af8e848b3967cce5285c637", // Add your key here
     currency: "NGN",
      heroImages: [

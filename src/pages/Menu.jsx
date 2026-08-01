@@ -4,28 +4,27 @@ import { brandConfig } from '../config/brands';
 import { supabase } from '../config/supabaseClient';
 import SEO from '../components/SEO';
 
-export default function Menu({ addToCart }) {
+// ADDED 'cart' to props
+export default function Menu({ addToCart, cart = [] }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedItem, setSelectedItem] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState("All");
   
   const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
   const searchQuery = searchParams.get("search")?.toLowerCase() || "";
 
-  // 1. FETCH PRODUCTS WITH SAFETY TIMEOUT (Prevents Infinite Spinning)
+  // 1. FETCH PRODUCTS & SETUP REAL-TIME SYNC
   useEffect(() => {
-    async function fetchProducts() {
-      setLoading(true);
-      try {
-        const currentBrandID = import.meta.env.VITE_BRAND || "yummys";
+    const currentBrandID = import.meta.env.VITE_BRAND || "yummys";
 
-        // If Supabase doesn't respond in 4s, we stop waiting to prevent the UI freeze
-        const { data, error } = await Promise.race([
-          supabase.from("products").select("*").eq("brand_id", currentBrandID).order("id", { ascending: false }),
-          new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 4000))
-        ]);
+    async function fetchProducts() {
+      try {
+        const { data, error } = await supabase
+          .from("products")
+          .select("*")
+          .eq("brand_id", currentBrandID)
+          .order("id", { ascending: false });
 
         if (error) throw error;
         setItems(data || []);
@@ -38,35 +37,38 @@ export default function Menu({ addToCart }) {
 
     fetchProducts();
 
-    // Re-sync data when user comes back to the tab
+    // REAL-TIME SUBSCRIPTION: This fixes the "must logout to see change" issue
+    // It listens for database changes (like stock updates) and refreshes UI instantly
+    const channel = supabase
+      .channel('schema-db-changes')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'products', filter: `brand_id=eq.${currentBrandID}` }, 
+        () => fetchProducts()
+      )
+      .subscribe();
+
     const handleVisibilityChange = () => {
       if (document.visibilityState === "visible") fetchProducts();
     };
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
-    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const getImageUrl = (url) => {
     if (!url) return "https://via.placeholder.com/150";
     if (url.startsWith('http')) return url;
-    const currentBrand = import.meta.env.VITE_BRAND || 'yummys';
-    const folder = currentBrand === 'pantry-co' ? 'pantry' : 'yummys';
+    const folder = (import.meta.env.VITE_BRAND || 'yummys') === 'pantry-co' ? 'pantry' : 'yummys';
     return `/images/${folder}/${url}`;
   };
 
-const categories = [
-    "All", 
-    ...new Set([
-      ...(brandConfig.categories || []), 
-      ...items.map(item => item.category).filter(Boolean)
-    ])
-  ];
+  const categories = ["All", ...new Set([...(brandConfig.categories || []), ...items.map(i => i.category).filter(Boolean)])];
 
-  // 2. FILTER ITEMS (This is the part that was missing or broken)
   const filteredItems = items.filter(item => {
-    const matchesSearch = (item.name || "").toLowerCase().includes(searchQuery) || 
-                         (item.description || "").toLowerCase().includes(searchQuery);
+    const matchesSearch = (item.name || "").toLowerCase().includes(searchQuery);
     const matchesCategory = selectedCategory === "All" || item.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
@@ -80,7 +82,7 @@ const categories = [
   }
 
   return (
-    <section style={{ backgroundColor: brandConfig?.primaryColor || '#ffffff' }} className="p-6 md:p-10 max-w-7xl mx-auto min-h-screen">
+    <section style={{ backgroundColor: brandConfig?.backColor || '#ffffff' }} className="p-6 md:p-10 max-w-7xl mx-auto min-h-screen">
       <SEO title={brandConfig.name === "Yummys" ? "Our Menu" : "Product Catalog"} />
 
       <div className="mb-10 text-center">
@@ -89,14 +91,13 @@ const categories = [
         </h2>
       </div>
 
-      {/* FILTER BUTTONS */}
       <div className="flex gap-3 mb-10 overflow-x-auto pb-4 no-scrollbar justify-start md:justify-center">
         {categories.map(cat => (
           <button
             key={cat}
             onClick={() => setSelectedCategory(cat)}
             style={{ 
-              backgroundColor: selectedCategory === cat ? brandConfig.accentColor : 'white',
+              backgroundColor: selectedCategory === cat ? brandConfig.primaryColor : 'white',
               color: selectedCategory === cat ? 'white' : '#666',
               borderColor: selectedCategory === cat ? brandConfig.primaryColor : '#eee'
             }}
@@ -107,11 +108,16 @@ const categories = [
         ))}
       </div>
       
-      {/* PRODUCT GRID */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
         {filteredItems.map((item) => {
-          const isOutOfStock = item.stock_quantity <= 0 || !item.is_available;
-          const isLowStock = item.stock_quantity > 0 && item.stock_quantity <= 5;
+          // LOGIC: Check how many of this item are already in the cart
+          const cartItem = cart.find(c => c.id === item.id);
+          const quantityInCart = cartItem ? cartItem.cartQuantity : 0;
+          
+          // EFFECTIVE STOCK: DB Stock minus what user already picked
+          const effectiveStock = item.stock_quantity - quantityInCart;
+          const isOutOfStock = effectiveStock <= 0 || !item.is_available;
+          const isLowStock = effectiveStock > 0 && effectiveStock <= 5;
 
           return (
             <div 
@@ -119,26 +125,20 @@ const categories = [
               className={`group relative bg-white rounded-3xl shadow-sm overflow-hidden flex flex-col border border-gray-100 transition-all duration-500 
                 ${isOutOfStock ? 'grayscale opacity-60 scale-[0.98]' : 'hover:shadow-xl hover:-translate-y-1'}`}
             >
-              {/* BADGES */}
               {isOutOfStock ? (
                 <div className="absolute top-4 left-4 z-10 bg-gray-800 text-white text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-tighter">
-                  Sold Out
+                  {item.stock_quantity <= 0 ? 'Sold Out' : 'Limit Reached'}
                 </div>
               ) : isLowStock ? (
                 <div className="absolute top-4 left-4 z-10 bg-orange-500 text-white text-[10px] font-black px-3 py-1.5 rounded-full uppercase animate-pulse">
-                  Only {item.stock_quantity} left
+                  Only {effectiveStock} left
                 </div>
               ) : null}
 
               <div onClick={() => setSelectedItem(item)} className="cursor-pointer flex-grow">
                 <div className="w-full h-60 bg-gray-50 flex items-center justify-center p-6">
-                  <img 
-                    src={getImageUrl(item.image_url)} 
-                    alt={item.name} 
-                    className="h-full w-auto object-contain transition duration-700 group-hover:rotate-3 group-hover:scale-110" 
-                  />
+                  <img src={getImageUrl(item.image_url)} alt={item.name} className="h-full w-auto object-contain transition duration-700 group-hover:rotate-3 group-hover:scale-110" />
                 </div>
-                
                 <div className="p-6">
                   <div className="flex justify-between items-start mb-2">
                     <h3 className="font-black text-xl text-gray-800 uppercase tracking-tighter leading-none">{item.name}</h3>
@@ -158,7 +158,7 @@ const categories = [
                   className={`w-full py-4 rounded-2xl font-black transition-all duration-300 text-sm uppercase tracking-widest
                     ${isOutOfStock ? 'text-gray-400 cursor-not-allowed' : 'text-white shadow-lg active:scale-95'}`}
                 >
-                  {isOutOfStock ? 'Sold Out' : 'Add to Order'}
+                  {isOutOfStock ? (item.stock_quantity <= 0 ? 'Sold Out' : 'Max in Cart') : 'Add to Order'}
                 </button>
               </div>
             </div>
@@ -167,83 +167,58 @@ const categories = [
       </div>
 
       {/* DETAIL MODAL */}
-     {selectedItem && (
-  <div className="fixed inset-0 bg-green-500/20 backdrop-blur-md z-[200] flex items-center justify-center p-4" onClick={() => setSelectedItem(null)}>
-    {/* MODAL CONTAINER: Added max-h-[90vh] and overflow-hidden */}
-    <div 
-      className="relative bg-white rounded-[32px] shadow-2xl max-w-xl w-full max-h-[90vh] overflow-hidden flex flex-col md:flex-row animate-scale-in" 
-      onClick={e => e.stopPropagation()}
-    >
-      
-      {/* FIXED CLOSE BUTTON: Now absolute so it's always reachable */}
-      <button 
-        onClick={() => setSelectedItem(null)} 
-        className="absolute top-4 right-4 z-[210] bg-white/80 backdrop-blur-sm text-gray-500 hover:text-black p-2 rounded-full shadow-sm transition-colors"
-      >
-        <span className="text-xl">✕</span>
-      </button>
+      {selectedItem && (() => {
+          const cartItem = cart.find(c => c.id === selectedItem.id);
+          const quantityInCart = cartItem ? cartItem.cartQuantity : 0;
+          const effectiveStock = selectedItem.stock_quantity - quantityInCart;
+          const isOutOfStock = effectiveStock <= 0 || !selectedItem.is_available;
 
-      {/* IMAGE SECTION: Reduced mobile height from h-80 to h-56 */}
-      <div className="w-full md:w-2/5 h-56 md:h-auto bg-gray-50 flex items-center justify-center p-6">
-        <img 
-          src={getImageUrl(selectedItem.image_url)} 
-          alt={selectedItem.name} 
-          className={`max-w-full max-h-full object-contain drop-shadow-xl ${selectedItem.stock_quantity <= 0 ? 'grayscale' : ''}`} 
-        />
-      </div>
+          return (
+            <div className="fixed inset-0 bg-green-500/20 backdrop-blur-md z-[200] flex items-center justify-center p-4" onClick={() => setSelectedItem(null)}>
+              <div className="relative bg-white rounded-[32px] shadow-2xl max-w-xl w-full max-h-[90vh] overflow-hidden flex flex-col md:flex-row animate-scale-in" onClick={e => e.stopPropagation()}>
+                <button onClick={() => setSelectedItem(null)} className="absolute top-4 right-4 z-[210] bg-white/80 backdrop-blur-sm text-gray-500 hover:text-black p-2 rounded-full shadow-sm">
+                  <span className="text-xl">✕</span>
+                </button>
 
-      {/* CONTENT SECTION: Added overflow-y-auto to allow scrolling inside if text is long */}
-      <div className="w-full md:w-3/5 p-6 md:p-8 flex flex-col justify-between overflow-y-auto">
-        <div className="mb-4">
-          <span className="inline-block bg-gray-100 px-3 py-1 rounded-full text-[10px] font-black uppercase text-gray-400 mb-2">
-            {selectedItem.category}
-          </span>
-          
-          {/* REDUCED NAME SIZE: From 4xl to 2xl, added break-words */}
-          <h2 className="text-xl md:text-2xl font-black text-gray-900 uppercase tracking-tight leading-tight mb-2 break-words">
-            {selectedItem.name}
-          </h2>
-          
-          <p className="text-gray-500 text-sm leading-relaxed mb-4">
-            {selectedItem.long_description || selectedItem.description}
-          </p>
-          
-          {/* INGREDIENTS SECTION */}
-          {selectedItem.ingredients && (
-            <div className="mb-4 p-3 bg-gray-50 rounded-xl border border-gray-100">
-              <h4 className="text-[9px] font-black uppercase text-gray-400 tracking-widest mb-1">Ingredients</h4>
-              <p className="text-gray-600 text-[11px] leading-relaxed italic">
-                {selectedItem.ingredients}
-              </p>
+                <div className="w-full md:w-2/5 h-56 md:h-auto bg-gray-50 flex items-center justify-center p-6">
+                  <img src={getImageUrl(selectedItem.image_url)} alt={selectedItem.name} className={`max-w-full max-h-full object-contain drop-shadow-xl ${isOutOfStock ? 'grayscale' : ''}`} />
+                </div>
+
+                <div className="w-full md:w-3/5 p-6 md:p-8 flex flex-col justify-between overflow-y-auto">
+                  <div className="mb-4">
+                    <span className="inline-block bg-gray-100 px-3 py-1 rounded-full text-[10px] font-black uppercase text-gray-400 mb-2">{selectedItem.category}</span>
+                    <h2 className="text-xl md:text-2xl font-black text-gray-900 uppercase tracking-tight leading-tight mb-2 break-words">{selectedItem.name}</h2>
+                    <p className="text-gray-500 text-sm leading-relaxed mb-4">{selectedItem.long_description || selectedItem.description}</p>
+                    
+                    {selectedItem.ingredients && (
+                      <div className="mb-4 p-3 bg-gray-50 rounded-xl border border-gray-100">
+                        <h4 className="text-[9px] font-black uppercase text-gray-400 tracking-widest mb-1">Ingredients</h4>
+                        <p className="text-gray-600 text-[11px] leading-relaxed italic">{selectedItem.ingredients}</p>
+                      </div>
+                    )}
+                    
+                    <div className="mb-4">
+                       {isOutOfStock ? (
+                         <p className="text-red-500 font-black text-[10px] uppercase tracking-widest">❌ {selectedItem.stock_quantity <= 0 ? 'Out of Stock' : 'Max Limit in Cart'}</p>
+                       ) : (
+                         <p className="text-green-500 font-black text-[10px] uppercase tracking-widest">✅ {effectiveStock} units available</p>
+                       )}
+                    </div>
+                  </div>
+
+                  <button 
+                    disabled={isOutOfStock}
+                    onClick={() => { addToCart(selectedItem); setSelectedItem(null); }}
+                    style={{ backgroundColor: isOutOfStock ? '#F3F4F6' : brandConfig.primaryColor }}
+                    className={`w-full py-4 rounded-xl font-black text-sm uppercase tracking-widest transition-all ${isOutOfStock ? 'text-gray-300' : 'text-white shadow-lg active:scale-95'}`}
+                  >
+                    {isOutOfStock ? 'Unavailable' : `Add - ₦${selectedItem.price?.toLocaleString()}`}
+                  </button>
+                </div>
+              </div>
             </div>
-          )}
-          
-          {/* STOCK STATUS */}
-          <div className="mb-4">
-             {selectedItem.stock_quantity <= 0 ? (
-               <p className="text-red-500 font-black text-[10px] uppercase tracking-widest">❌ Out of Stock</p>
-             ) : (
-               <p className="text-green-500 font-black text-[10px] uppercase tracking-widest">✅ {selectedItem.stock_quantity} units left</p>
-             )}
-          </div>
-        </div>
-
-        {/* BUTTON: More compact padding */}
-        <button 
-          disabled={selectedItem.stock_quantity <= 0 || !selectedItem.is_available}
-          onClick={() => { addToCart(selectedItem); setSelectedItem(null); }}
-          style={{ backgroundColor: (selectedItem.stock_quantity <= 0 || !selectedItem.is_available) ? '#F3F4F6' : brandConfig.primaryColor }}
-          className={`w-full py-4 rounded-xl font-black text-sm uppercase tracking-widest transition-all
-            ${(selectedItem.stock_quantity <= 0 || !selectedItem.is_available) ? 'text-gray-300' : 'text-white shadow-lg active:scale-95'}`}
-        >
-          {selectedItem.stock_quantity <= 0 || !selectedItem.is_available 
-            ? 'Unavailable' 
-            : `Add - ₦${selectedItem.price?.toLocaleString()}`}
-        </button>
-      </div>
-    </div>
-  </div>
-)}
+          );
+      })()}
     </section>
   );
 }

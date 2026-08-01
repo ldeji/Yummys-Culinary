@@ -108,15 +108,12 @@ useEffect(() => {
           <div className="flex gap-4 justify-center md:justify-start">
             <Link to="/menu">
              <button 
-               style={{ backgroundColor: brandConfig.accentColor }}
-              className="inline-block text-white px-8 py-3 rounded-xl font-bold hover:brightness-110 transition shadow-lg"
-              >
-                {/* 1. Try DB text. 2. Fallback to 'Order Now' */}
-                {content?.cta_button_text || "Order Now"} 
-                <span className="text-3xl ml-2">
-                  {brandConfig.name === "Yummys" ? "🍴" : "🌾"}
-                </span>
-              </button>
+              style={{ backgroundColor: brandConfig.accentColor }}
+              className="inline-block text-white px-12 py-5 rounded-2xl font-black text-xl md:text-2xl uppercase tracking-tight hover:brightness-110 hover:scale-105 active:scale-95 transition-all shadow-2xl"
+            >
+              {/* 1. Try DB text. 2. Fallback to 'Order Now' */}
+              {content?.cta_button_text || "Order Now"} 
+            </button>
             </Link>
           </div>
         </div>
