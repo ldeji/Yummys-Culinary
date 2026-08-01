@@ -90,7 +90,9 @@ useEffect(() => {
         {/* 1. Try DB title. 2. If null, use Yummys fallback. 3. Else use Pantry fallback */}
         {content?.hero_title || (brandConfig.name === "Yummys" ? "Hungry?" : "Need Pantry Items?")} 
         <br />
-        <span style={{ color: brandConfig.whiteColor }}>We got you.</span>
+        <span style={{ color: brandConfig.whiteColor }} className="px-2 py-1 rounded font-extrabold">
+          We got you.
+        </span>
       </h1>
       </div>
 
