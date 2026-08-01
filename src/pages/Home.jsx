@@ -85,7 +85,7 @@ useEffect(() => {
         <div>  
         <h1 
         style={{ color: brandConfig.accentColor, fontFamily: brandConfig.titleFont }}
-        className="text-4xl md:text-7xl leading-tight mb-6"
+        className="text-4xl md:text-6xl leading-tight mb-6"
       >
         {/* 1. Try DB title. 2. If null, use Yummys fallback. 3. Else use Pantry fallback */}
         {content?.hero_title || (brandConfig.name === "Yummys" ? "Hungry?" : "Need Pantry Items?")} 
@@ -95,6 +95,7 @@ useEffect(() => {
         </span>
       </h1>
       </div>
+      
 
       <p 
         style={{ color: brandConfig.accentColor }}
@@ -110,8 +111,8 @@ useEffect(() => {
           <div className="flex gap-4 justify-center md:justify-start">
             <Link to="/menu">
              <button 
-              style={{ backgroundColor: brandConfig.accentColor }}
-              className="inline-block text-white px-12 py-5 rounded-2xl font-black text-xl md:text-2xl uppercase tracking-tight hover:brightness-110 hover:scale-105 active:scale-95 transition-all shadow-2xl"
+              style={{ backgroundColor: brandConfig.accentColor, color: brandConfig.primaryColor }}
+              className="inline-block px-12 py-5 rounded-2xl font-black text-xl md:text-2xl uppercase tracking-tight hover:brightness-110 hover:scale-105 active:scale-95 transition-all shadow-2xl"
             >
               {/* 1. Try DB text. 2. Fallback to 'Order Now' */}
               {content?.cta_button_text || "Order Now"} 

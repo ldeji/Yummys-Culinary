@@ -13,16 +13,16 @@ const brands = {
     web3FormsKey: import.meta.env.VITE_YUMMYS_WEB3_KEY, // Inject key here
     footerText: "© 2026 Yummys Restaurant",
     items: yummysItems, // Attach the restaurant data
-    categories: "Rice, Starter, Finger Foods, Pasta, Breakfast, Drinks, Desserts",
+    categories: ["Rice", "Starter", "Finger Foods", "Pasta", "Breakfast", "Drinks", "Desserts"],
     upsells: yummysUpsells, // Attach the upsell data
     aboutImage: "/images/yummys/cheffo.jpeg",
     ctaImage: "https://images.unsplash.com/photo-1552566626-52f8b828add9?w=1200", // People eating
     whatsapp: "2348057080703", // added WhatsApp number for Yummys
     paystackKey: "pk_test_f5cf2aa44a08c1cf4af8e848b3967cce5285c637", // Add your key here
     currency: "NGN",
-    primaryColor: "#EAB308", // yellow-500
+    primaryColor: "#EA580C", // orange-600
     lightColor: "#EAB308",   // yellow-500
-    accentColor: "#E5E7EB",  // gray-200
+    accentColor: "#14532D",  // blue-900
     whiteColor: "#ffffff", // white
     backColor: "#111827", // dark-gray-900
     newColor: "blue", // dark-gray-900
