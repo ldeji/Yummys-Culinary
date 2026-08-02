@@ -20,22 +20,52 @@ export default function Auth() {
         const { error } = await supabase.auth.signUp({
           email,
           password,
-          options: { 
-            data: { 
-              full_name: fullName, 
-              // We save which brand they signed up on
-              brand_id: import.meta.env.VITE_BRAND || 'yummys' 
-            } 
+          options: {
+            data: {
+              full_name: fullName,
+              phone: "",
+              address: "",
+              role: "customer",
+              brand_id: import.meta.env.VITE_BRAND || "yummys",
+            }
           }
         });
         if (error) throw error;
         alert("Registration Successful! Please check your email to confirm your account.");
         setMode('login');
       } else if (mode === 'login') {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
-        navigate('/');
-      } else if (mode === 'forgot') {
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
+
+  if (error) throw error;
+
+  // ---------- FALLBACK ----------
+  const user = data.user;
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("id")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (!profile) {
+    await supabase.from("profiles").insert({
+      id: user.id,
+      full_name:
+        user.user_metadata?.full_name ||
+        user.user_metadata?.name ||
+        "",
+      brand_id:
+        user.user_metadata?.brand_id ||
+        (import.meta.env.VITE_BRAND || "yummys"),
+    });
+  }
+  // ------------------------------
+
+  navigate("/");
+} else if (mode === 'forgot') {
         // This sends the email with a link to your reset-password page
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
           redirectTo: `${window.location.origin}/reset-password`,

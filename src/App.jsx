@@ -172,19 +172,18 @@ const saveOrderToDatabase = async (paymentResponse, total) => {
       }
     }
 
-    setLastOrderData({
-      profile,
-      items: orderItemsCopy,
-      total,
-    });
+  setLastOrderData({
+  profile,
+  items: orderItemsCopy,
+  total,
+});
 
-    setCart([]);
-    setIsCartOpen(false);
-    setShowSuccessModal(true);
+setCart([]);
+localStorage.removeItem("cart"); // optional but recommended
+setIsCartOpen(false);
 
-    setTimeout(() => {
-      window.location.reload();
-    }, 1000);
+// Show the success modal and WAIT for the user
+setShowSuccessModal(true);
 
   } catch (e) {
     console.error("Checkout Error:", e);
@@ -423,26 +422,54 @@ const saveOrderToDatabase = async (paymentResponse, total) => {
             </div>
         </footer>
 
-        {/* --- SUCCESS WHATSAPP MODAL --- */}
-        {showSuccessModal && (
-          <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
-            <div className="bg-white rounded-[40px] p-10 max-w-sm w-full text-center shadow-2xl animate-scale-in">
-              <div className="text-7xl mb-6">✅</div>
-              <h2 className="text-3xl font-black text-gray-800 mb-2 uppercase tracking-tighter">Order Placed!</h2>
-              <p className="text-gray-500 text-sm mb-10 leading-relaxed">Payment was successful. Tap below to send your order details to {brandConfig.name} on WhatsApp for processing.</p>
-              <button 
-                onClick={() => {
-                  sendWhatsAppNotification(lastOrderData.profile, lastOrderData.items, lastOrderData.total);
-                  setShowSuccessModal(false);
-                }}
-                className="w-full bg-[#25D366] text-white py-5 rounded-3xl font-bold flex items-center justify-center gap-3 hover:brightness-110 transition-all active:scale-95 shadow-lg text-lg uppercase tracking-widest"
-              >
-                <FaWhatsapp size={24} /> Send WhatsApp
-              </button>
-              <button onClick={() => setShowSuccessModal(false)} className="mt-6 text-gray-400 text-xs font-bold uppercase tracking-widest">Close</button>
-            </div>
-          </div>
-        )}
+{/* --- SUCCESS WHATSAPP MODAL --- */}
+{showSuccessModal && (
+  <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/90 backdrop-blur-md p-4">
+    <div className="bg-white rounded-[40px] p-10 max-w-sm w-full text-center shadow-2xl animate-scale-in">
+
+      <div className="text-7xl mb-6">✅</div>
+
+      <h2 className="text-3xl font-black uppercase tracking-tighter text-gray-800 mb-2">
+        Order Placed!
+      </h2>
+
+      <p className="text-gray-500 text-sm leading-relaxed mb-10">
+        Payment was successful. Tap below to send your order details to{" "}
+        <strong>{brandConfig.name}</strong> on WhatsApp for processing.
+      </p>
+
+      <button
+        type="button"
+       onClick={() => {
+  sendWhatsAppNotification(
+    lastOrderData.profile,
+    lastOrderData.items,
+    lastOrderData.total
+  );
+
+  setShowSuccessModal(false);
+
+  window.location.reload();
+}}
+        className="w-full bg-[#25D366] text-white py-5 rounded-3xl font-bold flex items-center justify-center gap-3 shadow-lg hover:brightness-110 active:scale-95 transition-all uppercase tracking-widest"
+      >
+        <FaWhatsapp size={24} />
+        Send WhatsApp
+      </button>
+
+      <button
+  onClick={() => {
+    setShowSuccessModal(false);
+    window.location.reload();
+  }}
+  className="mt-6 text-gray-400 text-xs font-bold uppercase tracking-widest"
+>
+  Close
+</button>
+
+    </div>
+  </div>
+)}
 
         {/* --- CART DRAWER --- */}
         {isCartOpen && (
