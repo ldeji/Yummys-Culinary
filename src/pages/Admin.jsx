@@ -9,6 +9,7 @@ export default function Admin({ user }) {
   const [activeTab, setActiveTab] = useState('products');
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
+
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -31,20 +32,41 @@ export default function Admin({ user }) {
     category: 'General', is_available: true, stock_quantity: 0, ingredients: ''
   });
 
-  useEffect(() => { checkAdmin(); }, [user]);
+ useEffect(() => {
+  checkAdmin();
+}, [user]);
 
-  async function checkAdmin() {
-    if (!user) { navigate('/login'); return; }
-    try {
-      const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-      if (profile?.role === 'admin') { 
-        setUserProfile(profile); 
-        await fetchData(profile); 
-      } 
-      else { navigate('/'); }
-    } catch (err) { navigate('/'); }
+async function checkAdmin() {
+  if (!user) {
+    navigate("/login");
+    return;
   }
 
+  try {
+   const { data: profile } = await supabase
+  .from("profiles")
+  .select("full_name, phone, address, role, brand_id")
+  .eq("id", user.id)
+  .single();
+
+    const currentBrand = import.meta.env.VITE_BRAND || "yummys";
+
+    const hasAccess =
+      profile?.role === "super_admin" ||
+      (profile?.role === "admin" &&
+        profile?.brand_id === currentBrand);
+
+    if (hasAccess) {
+      setUserProfile(profile);
+      await fetchData(profile);
+    } else {
+      navigate("/");
+    }
+  } catch (err) {
+    navigate("/");
+  }
+}
+    // Fetch products, orders, and settings based on the user's profile
   async function fetchData(currentProfile = userProfile) {
     if (!currentProfile) return;
     try {
@@ -85,6 +107,7 @@ export default function Admin({ user }) {
   }
 
   const totalRevenue = orders.reduce((acc, order) => acc + (order.total_amount || 0), 0);
+  
   
   const getTopSellingProducts = () => {
     const counts = {};
@@ -247,61 +270,198 @@ export default function Admin({ user }) {
 
       {/* 3. ORDERS TAB (Month Grouping & Brand Stats) */}
       {activeTab === 'orders' && (
-        <div className="space-y-10">
-          {/* SUPER ADMIN REVENUE CARDS */}
-          {userProfile?.brand_id === 'all' && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {Object.entries(orders.reduce((acc, o) => { acc[o.brand_id] = (acc[o.brand_id] || 0) + (o.total_amount || 0); return acc; }, {}))
-              .map(([bid, rev]) => (
-                <div key={bid} className="bg-white p-6 rounded-[32px] border border-gray-100 shadow-sm">
-                  <p className="text-[10px] font-black uppercase text-gray-400 mb-1">{bid} Income</p>
-                  <p className="text-2xl font-black tracking-tighter">₦{rev.toLocaleString()}</p>
-                </div>
-              ))}
-              <div className="bg-black text-white p-6 rounded-[32px] shadow-lg">
-                <p className="text-[10px] font-black uppercase text-gray-500 mb-1">Total Platform</p>
-                <p className="text-2xl font-black tracking-tighter">₦{totalRevenue.toLocaleString()}</p>
-              </div>
-            </div>
+<div
+  className={`grid gap-6 ${
+    userProfile?.brand_id === "all"
+      ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+      : "grid-cols-1 lg:grid-cols-3"
+  }`}
+>
+
+  {userProfile?.brand_id === 'all' ? (
+    <>
+      {Object.entries(
+        orders.reduce((acc, o) => {
+          acc[o.brand_id] = (acc[o.brand_id] || 0) + (o.total_amount || 0);
+          return acc;
+        }, {})
+      ).map(([bid, rev]) => (
+        <div
+          key={bid}
+          className="bg-white p-6 rounded-[32px] border border-gray-100 shadow-sm"
+        >
+          <p className="text-[10px] font-black uppercase text-gray-400 mb-1">
+            {bid} Income
+          </p>
+          <p className="text-2xl font-black tracking-tighter">
+            ₦{rev.toLocaleString()}
+          </p>
+        </div>
+      ))}
+
+      <div className="bg-black text-white p-6 rounded-[32px] shadow-lg">
+        <p className="text-[10px] font-black uppercase text-gray-500 mb-1">
+          Total Platform
+        </p>
+        <p className="text-2xl font-black tracking-tighter">
+          ₦{totalRevenue.toLocaleString()}
+        </p>
+      </div>
+    </>
+  ) : (
+    <div className="lg:col-span-3 bg-gradient-to-r from-green-600 to-emerald-500 text-white p-8 rounded-[32px] shadow-xl flex items-center justify-between">
+
+  <div>
+    <p className="text-xs uppercase tracking-[0.3em] font-bold opacity-80">
+      Total Revenue
+    </p>
+
+    <h2 className="text-4xl lg:text-5xl font-black mt-3">
+      ₦{totalRevenue.toLocaleString()}
+    </h2>
+
+    <p className="text-sm opacity-80 mt-2 uppercase">
+      {userProfile?.brand_id}
+    </p>
+  </div>
+
+  <div className="hidden lg:flex items-center justify-center w-24 h-24 rounded-full bg-white/20 text-5xl">
+    💰
+  </div>
+
+</div>
           )}
 
-          {/* ORDERS GROUPED BY MONTH */}
-          {Object.entries(orders.reduce((acc, o) => {
-            const m = new Date(o.created_at).toLocaleString('default', { month: 'long', year: 'numeric' });
-            if (!acc[m]) acc[m] = []; acc[m].push(o); return acc;
-          }, {})).map(([month, mOrders]) => (
-            <div key={month} className="space-y-4">
-              <div className="flex items-center gap-4"><h3 className="text-[10px] font-black uppercase tracking-widest text-gray-400 whitespace-nowrap">{month}</h3><div className="h-[1px] w-full bg-gray-100"></div></div>
-              <div className="bg-white rounded-[40px] overflow-x-auto border shadow-sm">
-                <table className="w-full text-left min-w-[700px]">
-                  <thead className="bg-gray-50 text-[10px] font-black uppercase text-gray-400">
-                    <tr><th className="p-6">Order</th>{userProfile?.brand_id === 'all' && <th className="p-6">Brand</th>}<th className="p-6">Items</th><th className="p-6">Amount</th><th className="p-6">Status</th></tr>
-                  </thead>
-                  <tbody className="divide-y text-sm">
-                    {mOrders.map(o => (
-                      <tr key={o.id} className="hover:bg-gray-50 transition-colors">
-                        <td className="p-6 font-bold uppercase">#{o.id.toString().slice(0,8)}<br/><span className="text-[9px] text-gray-400 font-normal">{new Date(o.created_at).toLocaleDateString()}</span></td>
-                        {userProfile?.brand_id === 'all' && <td className="p-6"><span className="text-[9px] font-black px-2 py-1 bg-gray-100 rounded-md uppercase">{o.brand_id}</span></td>}
-                        <td className="p-6 text-[11px] text-gray-500 max-w-[200px] truncate">{o.items?.map(i => `${i.quantity}x ${i.name}`).join(', ')}</td>
-                        <td className="p-6 font-black text-gray-900">₦{o.total_amount?.toLocaleString()}</td>
-                        <td className="p-6">
-                          <select value={o.status || "Pending"} onChange={(e) => handleStatusUpdate(o.id, e.target.value)} className="bg-gray-50 border-none text-[9px] font-black uppercase py-2 px-3 rounded-xl cursor-pointer">
-                            <option value="Pending">⏳ Pending</option>
-                            <option value="Paid">💰 Paid</option>
-                            <option value="Out for delivery">🚚 Delivery</option>
-                            <option value="Completed">✅ Completed</option>
-                          </select>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+        {/* ORDERS GROUPED BY MONTH */}
+{Object.entries(
+  orders.reduce((acc, o) => {
+    const m = new Date(o.created_at).toLocaleString("default", {
+      month: "long",
+      year: "numeric",
+    });
+    if (!acc[m]) acc[m] = [];
+    acc[m].push(o);
+    return acc;
+  }, {})
+).map(([month, mOrders]) => (
+  <div key={month} className="space-y-4">
 
+    <div className="flex items-center gap-4">
+      <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-400 whitespace-nowrap">
+        {month}
+      </h3>
+      <div className="h-[1px] w-full bg-gray-100"></div>
+    </div>
+
+    {/* HORIZONTAL SCROLL */}
+    <div className="bg-white rounded-[40px] border shadow-sm overflow-hidden">
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[1500px] text-left">
+
+          <thead className="bg-gray-50 text-[10px] font-black uppercase text-gray-400">
+            <tr>
+              <th className="p-6 whitespace-nowrap">Order</th>
+
+              {userProfile?.brand_id === "all" && (
+                <th className="p-6 whitespace-nowrap">Brand</th>
+              )}
+
+              <th className="p-6 whitespace-nowrap">Customer</th>
+              <th className="p-6 whitespace-nowrap">Address</th>
+              <th className="p-6 whitespace-nowrap">Items</th>
+              <th className="p-6 whitespace-nowrap">Amount</th>
+              <th className="p-6 whitespace-nowrap">Status</th>
+            </tr>
+          </thead>
+
+          <tbody className="divide-y text-sm">
+            {mOrders.map((o) => (
+              <tr key={o.id} className="hover:bg-gray-50 transition-colors">
+
+                {/* ORDER */}
+                <td className="p-6 whitespace-nowrap">
+                  <div className="font-black text-lg">
+                    #{o.id.toString().slice(0, 8)}
+                  </div>
+
+                  <div className="text-[10px] text-gray-400">
+                    {new Date(o.created_at).toLocaleDateString()}
+                  </div>
+                </td>
+
+                {/* BRAND */}
+                {userProfile?.brand_id === "all" && (
+                  <td className="p-6 whitespace-nowrap">
+                    <span className="text-[9px] font-black px-3 py-1 bg-gray-100 rounded-full uppercase">
+                      {o.brand_id}
+                    </span>
+                  </td>
+                )}
+
+                {/* CUSTOMER */}
+                <td className="p-6 whitespace-nowrap min-w-[220px]">
+                  <p className="font-bold text-gray-900">
+                    {o.customer_name || "N/A"}
+                  </p>
+
+                  <p className="text-sm text-gray-500">
+                    {o.customer_phone || ""}
+                  </p>
+                </td>
+
+                {/* ADDRESS */}
+                <td className="p-6 min-w-[380px]">
+                  <p className="text-sm text-gray-600 break-words">
+                    {o.customer_address || "N/A"}
+                  </p>
+                </td>
+
+                {/* ITEMS */}
+                <td className="p-6 min-w-[380px]">
+                  {o.items?.map((i) => (
+                    <div key={i.id} className="mb-1">
+                      {i.quantity} × {i.name}
+                      <span className="font-semibold">
+                        {" "}
+                        (₦{i.price?.toLocaleString()})
+                      </span>
+                    </div>
+                  ))}
+                </td>
+
+                {/* AMOUNT */}
+                <td className="p-6 font-black text-gray-900 whitespace-nowrap">
+                  ₦{o.total_amount?.toLocaleString()}
+                </td>
+
+                {/* STATUS */}
+                <td className="p-6 whitespace-nowrap">
+                  <select
+                    value={o.status || "Pending"}
+                    onChange={(e) =>
+                      handleStatusUpdate(o.id, e.target.value)
+                    }
+                    className="bg-gray-50 border-none text-[10px] font-black uppercase py-2 px-3 rounded-xl cursor-pointer"
+                  >
+                    <option value="Pending">⏳ Pending</option>
+                    <option value="Paid">💰 Paid</option>
+                    <option value="Out for delivery">🚚 Delivery</option>
+                    <option value="Completed">✅ Completed</option>
+                  </select>
+                </td>
+
+              </tr>
+            ))}
+          </tbody>
+
+        </table>
+      </div>
+    </div>
+
+  </div>
+))}
+</div>
+)}
       {/* 4. ANALYTICS TAB */}
       {activeTab === 'analytics' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">

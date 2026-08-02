@@ -16,6 +16,7 @@ export default function Menu({ addToCart, cart = [] }) {
 
   // 1. FETCH PRODUCTS & SETUP REAL-TIME SYNC
   useEffect(() => {
+    console.log("✅ Menu useEffect started");
     const currentBrandID = import.meta.env.VITE_BRAND || "yummys";
 
     async function fetchProducts() {
@@ -40,12 +41,23 @@ export default function Menu({ addToCart, cart = [] }) {
     // REAL-TIME SUBSCRIPTION: This fixes the "must logout to see change" issue
     // It listens for database changes (like stock updates) and refreshes UI instantly
     const channel = supabase
-      .channel('schema-db-changes')
-      .on('postgres_changes', 
-        { event: '*', schema: 'public', table: 'products', filter: `brand_id=eq.${currentBrandID}` }, 
-        () => fetchProducts()
-      )
-      .subscribe();
+  .channel(`products-${currentBrandID}`)
+  .on(
+    "postgres_changes",
+    {
+      event: "UPDATE",
+      schema: "public",
+      table: "products",
+      filter: `brand_id=eq.${currentBrandID}`,
+    },
+    (payload) => {
+      console.log("product update:", payload);
+      fetchProducts();
+    }
+  )
+  .subscribe((status) => {
+    console.log("Realtime Status:", status);
+  });
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === "visible") fetchProducts();

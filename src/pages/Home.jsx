@@ -111,7 +111,7 @@ useEffect(() => {
           <div className="flex gap-4 justify-center md:justify-start">
             <Link to="/menu">
              <button 
-              style={{ backgroundColor: brandConfig.accentColor, color: brandConfig.primaryColor }}
+              style={{ backgroundColor: brandConfig.accentColor, color: brandConfig.whiteColor }}
               className="inline-block px-12 py-5 rounded-2xl font-black text-xl md:text-2xl uppercase tracking-tight hover:brightness-110 hover:scale-105 active:scale-95 transition-all shadow-2xl"
             >
               {/* 1. Try DB text. 2. Fallback to 'Order Now' */}

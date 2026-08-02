@@ -18,6 +18,7 @@
     "@tailwindcss/vite": "^4.1.18",
     "browser-image-compression": "^2.0.2",
     "env-cmd": "^11.0.0",
+    "lucide-react": "^1.28.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-helmet-async": "^3.0.0",

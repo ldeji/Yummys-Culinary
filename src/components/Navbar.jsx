@@ -11,35 +11,60 @@ export default function Navbar({ cartCount, setIsCartOpen, user }) {
   const navigate = useNavigate();
 
   // CHECK IF USER IS ADMIN
-  useEffect(() => {
-    if (user) {
-      const checkRole = async () => {
-        const { data: profile, error } = await supabase
-          .from('profiles')
-          .select('role, brand_id')
-          .eq('id', user.id)
-          .single();
-        
-        if (error) {
-          console.error("Auth check error:", error.message);
-          return;
-        }
+ 
+useEffect(() => {
+  if (user) {
+    const checkRole = async () => {
+      console.group("========== ADMIN CHECK ==========");
 
-        const currentBrand = import.meta.env.VITE_BRAND || 'yummys';
+      console.log("Logged in user:", user);
+      console.log("User ID:", user.id);
 
-        if (profile && profile.role === 'admin') {
-          if (profile.brand_id === currentBrand || profile.brand_id === 'all') {
-            setIsAdmin(true);
-          } else {
-            setIsAdmin(false);
-          }
-        }
-      };
-      checkRole();
-    } else {
-      setIsAdmin(false);
-    }
-  }, [user]);
+      const { data: profile, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .single();
+
+      console.log("Supabase Profile:", profile);
+      console.log("Supabase Error:", error);
+
+      const currentBrand = import.meta.env.VITE_BRAND || "yummys";
+      console.log("Current Brand:", currentBrand);
+
+     if (profile) {
+  // Super Admin can access every brand
+  if (profile.role === "super_admin") {
+    setIsAdmin(true);
+  }
+
+  // Brand Admin can only access their own brand
+  else if (
+    profile.role === "admin" &&
+    profile.brand_id === currentBrand
+  ) {
+    setIsAdmin(true);
+  }
+
+  // Everyone else
+  else {
+    setIsAdmin(false);
+  }
+} else {
+        console.log("❌ User is NOT an admin");
+        setIsAdmin(false);
+      }
+
+      console.log("================================");
+      console.groupEnd();
+    };
+
+    checkRole();
+  } else {
+    console.log("❌ No logged in user.");
+    setIsAdmin(false);
+  }
+}, [user]);
 
   const handleSearch = (e) => {
     e.preventDefault();

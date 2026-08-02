@@ -14,6 +14,8 @@ import ScrollToTop from "./components/ScrollToTop";
 import { supabase } from './config/supabaseClient';
 import { FaWhatsapp } from 'react-icons/fa';
 import Cart from './pages/Cart';
+import { Mail } from "lucide-react";
+import { FiPhone } from "react-icons/fi";
 
 function App() {
   const [user, setUser] = useState(null);
@@ -100,33 +102,95 @@ function App() {
     window.open(`https://wa.me/${brandConfig.whatsapp}?text=${encodeURIComponent(text)}`, '_blank');
   };
 
-  const saveOrderToDatabase = async (paymentResponse, total) => {
-    try {
-      const currentBrandID = import.meta.env.VITE_BRAND || 'yummys';
-      const orderItemsCopy = [...cart];
-      
-      const { error } = await supabase.from('orders').insert([{
-        brand_id: currentBrandID,
-        items: orderItemsCopy.map(i => ({ id: i.id, name: i.name, price: i.price, quantity: i.quantity })),
-        total_amount: total, 
-        status: 'Paid', 
-        user_id: user?.id
-      }]);
-      if (error) throw error;
+const saveOrderToDatabase = async (paymentResponse, total) => {
+  try {
+    const currentBrandID = import.meta.env.VITE_BRAND || "yummys";
+    const orderItemsCopy = [...cart];
 
-      // Deduct stock in database
-      for (const item of orderItemsCopy) {
-        const { data: p } = await supabase.from('products').select('stock_quantity').eq('id', item.id).single();
-        if (p) await supabase.from('products').update({ stock_quantity: Math.max(0, p.stock_quantity - item.quantity) }).eq('id', item.id);
+    // Load customer profile FIRST
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("full_name, phone, address")
+      .eq("id", user.id)
+      .single();
+
+    if (profileError) throw profileError;
+
+    // Save Order
+    const { error } = await supabase.from("orders").insert([
+      {
+        brand_id: currentBrandID,
+        items: orderItemsCopy.map((i) => ({
+          id: i.id,
+          name: i.name,
+          price: i.price,
+          quantity: i.quantity,
+        })),
+        total_amount: total,
+        status: "Paid",
+        user_id: user?.id,
+        payment_reference: paymentResponse.reference,
+
+        // Customer snapshot
+        customer_name: profile?.full_name,
+        customer_phone: profile?.phone,
+        customer_address: profile?.address,
+      },
+    ]);
+
+    if (error) throw error;
+
+    // Deduct Stock
+    for (const item of orderItemsCopy) {
+      const { data: product, error: fetchError } = await supabase
+        .from("products")
+        .select("stock_quantity")
+        .eq("id", item.id)
+        .single();
+
+      if (fetchError) {
+        console.error("Fetch Stock Error:", fetchError);
+        continue;
       }
 
-      const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-      setLastOrderData({ profile, items: orderItemsCopy, total });
-      setCart([]); 
-      setIsCartOpen(false); 
-      setShowSuccessModal(true); 
-    } catch (e) { alert("Checkout Error: " + e.message); }
-  };
+      const newStock = Math.max(
+        0,
+        (product?.stock_quantity || 0) - item.quantity
+      );
+
+      const { error: updateError } = await supabase
+        .from("products")
+        .update({
+          stock_quantity: newStock,
+        })
+        .eq("id", item.id);
+
+      if (updateError) {
+        console.error("Stock Update Error:", updateError);
+      } else {
+        console.log(`✅ ${item.name} stock updated to ${newStock}`);
+      }
+    }
+
+    setLastOrderData({
+      profile,
+      items: orderItemsCopy,
+      total,
+    });
+
+    setCart([]);
+    setIsCartOpen(false);
+    setShowSuccessModal(true);
+
+    setTimeout(() => {
+      window.location.reload();
+    }, 1000);
+
+  } catch (e) {
+    console.error("Checkout Error:", e);
+    alert("Checkout Error: " + e.message);
+  }
+};
 
   const handleCheckout = () => {
     if (!user) { window.location.href = "/login"; return; }
@@ -172,7 +236,7 @@ function App() {
     } catch (error) {
       setStatus("error");
     }
-  };
+};
 
 
   return (
@@ -224,29 +288,69 @@ function App() {
             </div>
             
             <div>
-              <h3 style={{ color: brandConfig.accentColor }} className="font-bold text-lg mb-6 uppercase tracking-widest">Explore</h3>
-              <ul style={{ color: brandConfig.accentColor }}className="text-sm space-y-3 opacity-90">
-                <li><Link to="/" className="hover:underline">Home</Link></li>
-                <li><Link to="/menu" className="hover:underline">Shop Menu</Link></li>
+              <h3
+                style={{ color: brandConfig.accentColor }}
+                className="font-bold text-lg mb-6 uppercase tracking-widest"
+              >
+                Quick Links
+              </h3>
+
+              <ul
+                style={{ color: brandConfig.accentColor }}
+                className="text-sm space-y-3 opacity-90"
+              >
+                <li>
+                  <Link to="/" className="hover:underline">
+                    Home
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/menu" className="hover:underline">
+                    Shop
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/about" className="hover:underline">
+                    About
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/login" className="hover:underline">
+                    Log In
+                  </Link>
+                </li>
               </ul>
             </div>
   
                             
-              {/* Phone Link */}
+              {/* Phone*/}
             <div>   
               <h3 style={{ color: brandConfig.accentColor }} className="font-bold text-lg mb-6 uppercase tracking-widest">Contact Us</h3>
-              <p style={{ color: brandConfig.accentColor }}className="text-sm opacity-90 mb-1"><a href={`tel:+${brandConfig.whatsapp.replace(/\D/g, '')}`}> +{brandConfig.whatsapp}</a></p>
+              <p
+                style={{ color: brandConfig.accentColor }}
+                className="text-sm opacity-90 mb-1 flex items-center gap-2"
+              >
+                <FiPhone size={16} />
+                <a href={`tel:+${brandConfig.whatsapp.replace(/\D/g, "")}`}>
+                  +{brandConfig.whatsapp}
+                </a>
+              </p>
               
 
               {/* Email Link */}
-              <p style={{ color: brandConfig.accentColor }}className="text-sm opacity-90 lowercase">
-                <a 
-                  href={`mailto:${brandConfig.supportEmail || `hello@${brandConfig.name.toLowerCase()}.com`}`}
-                  className="hover:underline"
-                >
-                  {brandConfig.supportEmail || `hello@${brandConfig.name.toLowerCase()}.com`}
-                </a>
-              </p>
+             <div className="flex items-center gap-2">
+              <Mail
+                size={18}
+                style={{ color: brandConfig.accentColor }}
+              />
+              <a
+                href={`mailto:${brandConfig.supportEmail}`}
+                className="text-sm lowercase hover:underline"
+                style={{ color: brandConfig.accentColor }}
+              >
+                {brandConfig.supportEmail}
+              </a>
+            </div>
             </div>
 
             <div>
