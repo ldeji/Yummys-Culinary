@@ -55,8 +55,8 @@ useEffect(() => {
 
   return (
     <div 
-       style={{ 
-        background: `linear-gradient(${isMobile ? 'to bottom' : 'to right'}, ${brandConfig.primaryColor} 65%, ${brandConfig.accentColor} 100%)` 
+       style={{ fontFamily: brandConfig.titleFont,
+        background: `linear-gradient(${isMobile ? 'to bottom' : 'to right'}, ${brandConfig.primaryColor} 65%, ${brandConfig.primaryColor} 100%)` 
       }}
       className="min-h-[85vh] flex items-center justify-center px-4 overflow-hidden"
     >
@@ -128,7 +128,7 @@ useEffect(() => {
           {heroImages.length > 0 && (
             <div 
               style={{ backgroundColor: heroImages[currentIndex].blob }}
-              className="absolute w-72 h-72 md:w-96 md:h-96 aspect-square rounded-full blur-3xl opacity-40 transition-colors duration-1000"
+              className="absolute w-72 h-72 md:w-96 md:h-96 aspect-square rounded-full blur-3xl opacity-0 transition-colors duration-1000"
             ></div>
           )}
 
@@ -140,10 +140,10 @@ useEffect(() => {
             {heroImages.map((item, index) => (
               <div
                 key={item.id}
-                className={`absolute inset-0 w-full h-full rounded-full bg-white shadow-2xl overflow-hidden backface-hidden transition-all duration-1000 ease-in-out
+                className={`absolute inset-0 w-full h-full rounded-full bg-white overflow-hidden backface-hidden transition-all duration-1000 ease-in-out
                   ${index === currentIndex 
                     ? "opacity-100 [transform:rotateY(0deg)] z-10" 
-                    : "opacity-0 [transform:rotateY(180deg)] z-0"
+                    : "opacity-100 [transform:rotateY(180deg)] z-0"
                   }
                 `}
               >

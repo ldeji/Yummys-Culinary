@@ -34,7 +34,7 @@ export default function About() {
   }, []);
 
   return (
-    <div className="bg-white min-h-screen">
+    <div style={{ fontFamily: brandConfig.titleFont }} className="bg-white min-h-screen">
       <SEO title="About Us" />
       
       {/* --- HERO SECTION --- */}

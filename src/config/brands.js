@@ -9,7 +9,7 @@ const brands = {
     imageFolder: "/images/yummys", // <--- Points to restaurant photos
     supportEmail: "support@yummys.com",
     address: "123 Adebola Ojomu Street, Aguda, Lagos",
-    titleFont: "'Fredoka', sans-serif", // Playful & Rounded
+    titleFont: "'Fredoka', sans-serif", // Playful & Rounded Quicksand
     web3FormsKey: import.meta.env.VITE_YUMMYS_WEB3_KEY, // Inject key here
     footerText: "© 2026 Yummys Restaurant",
     items: yummysItems, // Attach the restaurant data
@@ -36,7 +36,7 @@ const brands = {
   "pantry-co": {
     name: "Pantry & Co.",
     logo: "/images/pantry/pantryLogo.webp",
-    titleFont: "'Playfair Display', sans-serif", // Elegant & Friendly
+    titleFont: "'Quicksand', sans-serif", // Elegant & Friendly
     imageFolder: "/images/pantry", // <--- Points to dry goods photos
     supportEmail: "Address: pantrygroceries@gmail.com",
     address: "Suite 95, First Floor, Dolphin Plaza, Corporation Drive, Dolphin Estate, Ikoyi, Lagos",
@@ -47,7 +47,7 @@ const brands = {
     upsells: pantryUpsells,
     aboutImage: "/images/pantry/PantryCollection.webp",
     ctaImage: "https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=1200", // People cooking
-    primaryColor: "#14532d", // green-700
+    primaryColor: "#273511", // green-700 #273511
     lightColor: "#16a34a",   // fushia
     accentColor: "#c5a47f", // gold color
     backColor: "#24150f", // dark-brown

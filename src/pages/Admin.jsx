@@ -325,9 +325,9 @@ async function checkAdmin() {
     </p>
   </div>
 
-  <div className="hidden lg:flex items-center justify-center w-24 h-24 rounded-full bg-white/20 text-5xl">
-    💰
-  </div>
+ <div className="hidden lg:flex items-center justify-center w-24 h-24 rounded-full bg-white/20 text-6xl font-black">
+  ₦
+</div>
 
 </div>
           )}
@@ -444,8 +444,9 @@ async function checkAdmin() {
                     className="bg-gray-50 border-none text-[10px] font-black uppercase py-2 px-3 rounded-xl cursor-pointer"
                   >
                     <option value="Pending">⏳ Pending</option>
-                    <option value="Paid">💰 Paid</option>
-                    <option value="Out for delivery">🚚 Delivery</option>
+                    <option value="Paid">₦ Paid</option>
+                    <option value="Preparing Your Order">Preparing Your Order</option>
+                    <option value="Out for delivery">🚚Out for Delivery</option>
                     <option value="Completed">✅ Completed</option>
                   </select>
                 </td>

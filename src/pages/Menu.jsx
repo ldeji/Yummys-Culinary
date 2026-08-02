@@ -87,18 +87,18 @@ export default function Menu({ addToCart, cart = [] }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div style={{ fontFamily: brandConfig.titleFont }} className="min-h-screen flex items-center justify-center">
         <div style={{ borderTopColor: brandConfig.primaryColor }} className="animate-spin rounded-full h-16 w-16 border-4 border-gray-200"></div>
       </div>
     );
   }
 
   return (
-    <section style={{ backgroundColor: brandConfig?.backColor || '#ffffff' }} className="p-6 md:p-10 max-w-7xl mx-auto min-h-screen">
+    <section style={{ backgroundColor: brandConfig?.primaryColor || '#ffffff' }} className="p-6 md:p-10 max-w-7xl mx-auto min-h-screen">
       <SEO title={brandConfig.name === "Yummys" ? "Our Menu" : "Product Catalog"} />
 
       <div className="mb-10 text-center">
-        <h2 style={{ color: brandConfig?.accentColor || '#000000' }} className="text-3xl md:text-5xl font-black tracking-tight uppercase">
+        <h2 style={{ color: brandConfig?.whiteColor || '#000000' }} className="text-3xl md:text-5xl font-black tracking-tight uppercase">
           {brandConfig?.name === "Yummys" ? "Our Full Menu" : "Our Catalog"}
         </h2>
       </div>
