@@ -43,12 +43,12 @@ const brands = {
     web3FormsKey: import.meta.env.VITE_PANTRY_WEB3_KEY, // Inject key here
     footerText: "© 2026 Pantry & Co",
     items: pantryItems,
-    categories: ["Cleaning", "Tea","Beverages", "Kitchen Consumables", "Dry Goods","Condiments"],
+    categories: ["Cleaning", "Teas","Beverages", "Kitchen Consumables", "Dry Foods","Condiments"],
     upsells: pantryUpsells,
     aboutImage: "/images/pantry/PantryCollection.webp",
     ctaImage: "https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=1200", // People cooking
     primaryColor: "#273511", // green-700 #273511
-    lightColor: "#16a34a",   // fushia
+    lightColor: "#16a34a",   // green-500
     accentColor: "#c5a47f", // gold color
     backColor: "#24150f", // dark-brown
     newColor: "#24150f", // green-300
