@@ -38,7 +38,7 @@ const brands = {
     logo: "/images/pantry/pantryLogo.webp",
     titleFont: "'Quicksand', sans-serif", // Elegant & Friendly
     imageFolder: "/images/pantry", // <--- Points to dry goods photos
-    supportEmail: "Address: pantrygroceries@gmail.com",
+    supportEmail: "pantrygroceries@gmail.com",
     address: "Suite 95, First Floor, Dolphin Plaza, Corporation Drive, Dolphin Estate, Ikoyi, Lagos",
     web3FormsKey: import.meta.env.VITE_PANTRY_WEB3_KEY, // Inject key here
     footerText: "© 2026 Pantry & Co",
