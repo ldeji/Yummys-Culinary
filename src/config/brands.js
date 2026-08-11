@@ -35,7 +35,7 @@ const brands = {
   },
   "pantry-co": {
     name: "Pantry & Co.",
-    logo: "/images/pantry/pantryLogo.webp",
+    logo: "/images/pantry/Pantry_Cologo.webp",
     titleFont: "'Quicksand', sans-serif", // Elegant & Friendly
     imageFolder: "/images/pantry", // <--- Points to dry goods photos
     supportEmail: "pantrygroceries@gmail.com",
