@@ -281,9 +281,19 @@ setShowSuccessModal(true);
             <div>
               <Link to="/"><img src={brandConfig.logo} className="h-16 w-16 rounded-full mb-4 object-cover" alt="logo"/></Link>
               <h4 style={{ color: brandConfig.accentColor }}className="font-bold text-lg mb-2">{brandConfig.name}</h4>
-              <p style={{ color: brandConfig.accentColor }} className="text-xs opacity-70 leading-relaxed max-w-[200px]">
+             <a 
+              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(brandConfig.address || "Lagos, Nigeria")}`}
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="group"
+            >
+              <p 
+                style={{ color: brandConfig.accentColor }} 
+                className="text-xs opacity-70 leading-relaxed max-w-[200px] group-hover:opacity-100 group-hover:underline transition-all"
+              >
                 {brandConfig.address || "Lagos, Nigeria."}
               </p>
+            </a>
             </div>
             
             <div>
@@ -342,13 +352,13 @@ setShowSuccessModal(true);
                 size={18}
                 style={{ color: brandConfig.accentColor }}
               />
-              <a
-                href={`mailto:${brandConfig.supportEmail}`}
-                className="text-sm lowercase hover:underline"
-                style={{ color: brandConfig.accentColor }}
-              >
-                {brandConfig.supportEmail}
-              </a>
+             <a
+              href={`mailto:${(brandConfig.supportEmail || `hello@${brandConfig.name?.toLowerCase().replace(/\s/g, '')}.com`).trim()}`}
+              className="text-sm lowercase hover:underline"
+              style={{ color: brandConfig.accentColor }}
+            >
+              {brandConfig.supportEmail || `hello@${brandConfig.name?.toLowerCase().replace(/\s/g, '')}.com`}
+            </a>
             </div>
             </div>
 

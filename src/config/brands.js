@@ -21,7 +21,7 @@ const brands = {
     whatsapp: "2348057080703", // added WhatsApp number for Yummys
     paystackKey: import.meta.env.VITE_PAYSTACK_KEY, // Add your key here
     currency: "NGN",
-    primaryColor: "#EA580C", // orange-600
+    primaryColor: "#ff8c42", // orange-600
     lightColor: "#EAB308",   // yellow-500
     accentColor: "#14532D",  // blue-900
     whiteColor: "#ffffff", // white

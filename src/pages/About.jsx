@@ -66,11 +66,13 @@ export default function About() {
               className="rounded-2xl shadow-2xl w-full h-auto object-cover max-h-[500px]"
             />
             <div
-              style={{ backgroundColor: brandConfig.lightColor }}
+              style={{ backgroundColor: brandConfig.primaryColor }}
               className="absolute -bottom-6 -right-6 p-6 rounded-xl shadow-xl border border-gray-100"
             >
-              <span style={{ color: brandConfig.backColor }} className="block text-xl font-bold leading-none">Established</span>
-              <span className="block text-4xl font-black text-gray-800">2024</span>
+              <span style={{ color: brandConfig.accentColor }} className="block text-xl font-bold leading-none">Established</span>
+              <span style={{ color: brandConfig.accentColor }} className="block text-4xl">
+                {content?.established_year || "2024"}
+              </span>
             </div>
           </div>
 

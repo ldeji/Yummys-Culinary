@@ -24,7 +24,8 @@ export default function Admin({ user }) {
     about_story: '',
     about_hero_title: '',
     about_hero_accent: '',
-    about_hero_description: '' 
+    about_hero_description: '',
+    established_year: '', 
   });
 
   const navigate = useNavigate();
@@ -505,7 +506,8 @@ async function checkAdmin() {
                 about_hero_title: settings.about_hero_title,
                 about_hero_accent: settings.about_hero_accent,
                 about_hero_description: settings.about_hero_description,
-                about_story: settings.about_story 
+                about_story: settings.about_story,
+                established_year: settings.established_year 
               });
               if (error) throw error;
               alert("Store Content Saved!");
@@ -525,7 +527,7 @@ async function checkAdmin() {
             <div><label className="text-[10px] font-black uppercase text-gray-400 block mb-2">About Hero Accent</label><input type="text" className="w-full bg-gray-50 p-4 rounded-2xl font-bold text-sm" value={settings.about_hero_accent || ''} onChange={e => setSettings({...settings, about_hero_accent: e.target.value})} /></div>
             <div><label className="text-[10px] font-black uppercase text-gray-400 block mb-2">About Hero Description</label><textarea className="w-full bg-gray-50 p-4 rounded-2xl font-bold text-sm h-40" value={settings.about_hero_description || ''} onChange={e => setSettings({...settings, about_hero_description: e.target.value})} /></div>
             <div><label className="text-[10px] font-black uppercase text-gray-400 block mb-2">About Our Story</label><textarea className="w-full bg-gray-50 p-4 rounded-2xl font-bold text-sm h-40" value={settings.about_story || ''} onChange={e => setSettings({...settings, about_story: e.target.value})} /></div>
-
+            <div><label className="text-[10px] font-black uppercase text-gray-400 block mb-2">Established Year</label><input type="text" className="w-full bg-gray-50 p-4 rounded-2xl font-bold text-sm" value={settings.established_year || ''} onChange={e => setSettings({...settings, established_year: e.target.value})} /></div>
             <button type="submit" disabled={saving} style={{ backgroundColor: brandConfig.primaryColor }} className="w-full text-white py-5 rounded-2xl font-black uppercase tracking-widest shadow-lg hover:scale-[1.01] transition-transform">
               {saving ? 'Saving...' : 'Update Store Content'}
             </button>
