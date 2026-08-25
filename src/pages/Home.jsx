@@ -91,7 +91,7 @@ useEffect(() => {
         {content?.hero_title || (brandConfig.name === "Yummys" ? "Hungry?" : "Need Pantry Items?")} 
         <br />
         <span style={{ color: brandConfig.whiteColor }} className="px-2 py-1 rounded font-extrabold">
-          We got you.
+          {content?.hero_title_accent || (brandConfig.name === "Yummys" ? "We got you" : "We got you")} 
         </span>
       </h1>
       </div>

@@ -4,15 +4,17 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "lint": "eslint .",
-    "preview": "vite preview",
-    "start:yummys": "env-cmd -f .env.yummys vite",
-    "start:pantry": "env-cmd -f .env.pantry vite",
-    "build:yummys": "env-cmd -f .env.yummys vite build",
-    "build:pantry": "env-cmd -f .env.pantry vite build"
-  },
+  "dev": "vite",
+  "build": "vite build",
+  "lint": "eslint .",
+  "preview": "vite preview",
+  "start:yummys": "env-cmd -f .env.yummys vite",
+  "start:pantry": "env-cmd -f .env.pantry vite",
+  "start:CeeTheBata": "env-cmd -f .env.CeeTheBata vite",
+  "build:yummys": "env-cmd -f .env.yummys vite build",
+  "build:pantry": "env-cmd -f .env.pantry vite build",
+  "build:CeeTheBata": "env-cmd -f .env.CeeTheBata vite build" 
+},
   "dependencies": {
     "@supabase/supabase-js": "^2.105.4",
     "@tailwindcss/vite": "^4.1.18",

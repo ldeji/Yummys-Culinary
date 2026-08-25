@@ -37,20 +37,23 @@ export default function About() {
     <div style={{ fontFamily: brandConfig.titleFont }} className="bg-white min-h-screen">
       <SEO title="About Us" />
       
-      {/* --- HERO SECTION --- */}
-      <section style={{ backgroundColor: brandConfig.primaryColor }} className="py-20 px-4 text-center text-white">
-        <h1 className="text-4xl md:text-5xl font-extrabold mb-4">
-          More Than Just <span style={{ color: brandConfig.accentColor }}>
-             {brandConfig.name === "Yummys" ? "Food." : "Ingredients."}
-           </span>
-        </h1>
-        <p className="text-xl text-gray-300 max-w-2xl mx-auto opacity-90">
-          {brandConfig.name === "Yummys" 
-            ? "We believe that a great meal can fix a bad day. That’s why we wake up every morning to grill, season, and serve happiness." 
-            : "We believe that a well-stocked pantry is the heart of every home. That’s why we source, pack, and deliver the freshest ingredients."
-          }
-        </p>
-      </section>
+{/* --- UPDATED HERO SECTION --- */}
+<section style={{ backgroundColor: brandConfig.primaryColor }} className="py-20 px-4 text-center text-white">
+  <h1 className="text-4xl md:text-5xl font-extrabold mb-4">
+    {/* 1. Try DB title, then fallback based on brand */}
+    {content?.about_hero_title || "More Than Just "}{' '}
+    <span style={{ color: brandConfig.accentColor }}>
+       {content?.about_hero_accent || (brandConfig.name === "Yummys" ? "Food." : brandConfig.name === "pantry-co" ? "Ingredients." : "Style.")}
+     </span>
+  </h1>
+  <p className="text-xl text-gray-300 max-w-2xl mx-auto opacity-90">
+    {content?.about_hero_description || (
+      brandConfig.name === "Yummys" 
+        ? "We believe that a great meal can fix a bad day. That’s why we wake up every morning to grill, season, and serve happiness." 
+        : "We believe that a well-stocked pantry is the heart of every home. That’s why we source, pack, and deliver the freshest ingredients."
+    )}
+  </p>
+</section>
 
       {/* --- OUR STORY SECTION --- */}
       <section className="max-w-6xl mx-auto py-16 px-4">

@@ -1,6 +1,7 @@
 // src/config/brands.js
 import { yummysItems, yummysUpsells } from '../data/yummysData';
 import { pantryItems, pantryUpsells } from '../data/pantryData';
+import { ceeTheBataItems, ceeTheBataUpsells } from '../data/ceeTheBata';
 
 const brands = {
   yummys: {
@@ -10,7 +11,7 @@ const brands = {
     supportEmail: "support@yummys.com",
     address: "123 Adebola Ojomu Street, Aguda, Lagos",
     titleFont: "'Fredoka', sans-serif", // Playful & Rounded Quicksand
-    web3FormsKey: import.meta.env.VITE_YUMMYS_WEB3_KEY, // Inject key here
+    web3FormsKey: import.meta.env.VITE_WEB3_KEY, // Inject key here
     footerText: "© 2026 Yummys Restaurant",
     items: yummysItems, // Attach the restaurant data
     categories: ["Rice", "Starter", "Finger Foods", "Pasta", "Breakfast", "Drinks", "Desserts"],
@@ -18,7 +19,7 @@ const brands = {
     aboutImage: "/images/yummys/cheffo.jpeg",
     ctaImage: "https://images.unsplash.com/photo-1552566626-52f8b828add9?w=1200", // People eating
     whatsapp: "2348057080703", // added WhatsApp number for Yummys
-    paystackKey: "pk_test_f5cf2aa44a08c1cf4af8e848b3967cce5285c637", // Add your key here
+    paystackKey: import.meta.env.VITE_PAYSTACK_KEY, // Add your key here
     currency: "NGN",
     primaryColor: "#EA580C", // orange-600
     lightColor: "#EAB308",   // yellow-500
@@ -40,7 +41,7 @@ const brands = {
     imageFolder: "/images/pantry", // <--- Points to dry goods photos
     supportEmail: "pantrygroceries@gmail.com",
     address: "Suite 95, First Floor, Dolphin Plaza, Corporation Drive, Dolphin Estate, Ikoyi, Lagos",
-    web3FormsKey: import.meta.env.VITE_PANTRY_WEB3_KEY, // Inject key here
+    web3FormsKey: import.meta.env.VITE_WEB3_KEY,
     footerText: "© 2026 Pantry & Co",
     items: pantryItems,
     categories: ["Cleaning", "Teas","Beverages", "Kitchen Consumables", "Dry Foods","Condiments"],
@@ -53,8 +54,8 @@ const brands = {
     backColor: "#24150f", // dark-brown
     newColor: "#24150f", // green-300
     whiteColor: "#ffffff", // white
-    whatsapp: "2348035304415", // added WhatsApp number for Pantry & Co.
-    paystackKey: "pk_test_f5cf2aa44a08c1cf4af8e848b3967cce5285c637", // Add your key here
+    whatsapp: "2348035304415", // added WhatsApp number for Pantry & Co. 
+    paystackKey: import.meta.env.VITE_PAYSTACK_KEY,// Add your key here
     currency: "NGN",
      heroImages: [
       { id: 1, img: "/images/pantry/NesquikChocolate.webp", blob: "#86EFAC" }, // green-300
@@ -66,11 +67,45 @@ const brands = {
       { id: 7, img: "/images/pantry/Fabuloso.webp", blob: "#86EFAC" },
       { id: 8, img: "/images/pantry/Knorr.webp", blob: "#86EFAC" }
     ]
+  },
+  "cee-the-bata": {
+    name: "Cee The Bata",
+    logo: "/images/cee-the-bata/CeeTheBataLogo.webp",
+    titleFont: "'Quicksand', sans-serif", // Elegant & Friendly
+    imageFolder: "/images/cee-the-bata", // <--- Points to dry goods photos
+    supportEmail: "ceethebata@gmail.com",
+    address: "Plot 12, Block A, Lekki Phase 1, Lagos",
+    web3FormsKey: import.meta.env.VITE_WEB3_KEY,
+    footerText: "© 2026 Cee The Bata",
+    items: ceeTheBataItems,
+    categories: ["Belts", "Accessories", "Sandals" , "Slippers", "Shoes"],
+    upsells: ceeTheBataUpsells,
+    aboutImage: "/images/cee-the-bata/CeeTheBataCollection.webp",
+    ctaImage: "https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=1200", // People cooking
+    primaryColor: "#273511", // green-700 #273511
+    lightColor: "#16a34a",   // green-500
+    accentColor: "#c5a47f", // gold color
+    backColor: "#24150f", // dark-brown
+    newColor: "#24150f", // green-300
+    whiteColor: "#ffffff", // white
+    whatsapp: "07080450190", // added WhatsApp number for Cee The Bata
+    paystackKey: import.meta.env.VITE_PAYSTACK_KEY, // Add your key here
+    currency: "NGN",
+     heroImages: [
+      { id: 1, img: "/images/cee-the-bata/CeeTheBataLogo.webp", blob: "#86EFAC" }, // green-300
+      { id: 2, img: "/images/cee-the-bata/CeeTheBataCollection.webp", blob: "#86EFAC" },
+      { id: 3, img: "/images/cee-the-bata/Sandal.webp", blob: "#DCFCE7" }, // green-100
+      { id: 4, img: "/images/cee-the-bata/Slippers.webp", blob: "#86EFAC" }
+    ]
   }
 };
 
 
-const currentBrandKey = import.meta.env.VITE_BRAND || 'yummys';
-console.log("Looking for brand key:", currentBrandKey);
-export const brandConfig = brands[currentBrandKey] || brands['yummys'];
+const currentBrandKey = import.meta.env.VITE_BRAND;
+// 1. Check if the brand exists in our config
+if (!brands[currentBrandKey]) {
+  console.error(`🛑 CRITICAL ERROR: Brand "${currentBrandKey}" is not defined in brands.js! Check your .env file.`);
+}
+
+export const brandConfig = brands[currentBrandKey];
 export default brands;

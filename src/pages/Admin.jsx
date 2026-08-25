@@ -21,7 +21,10 @@ export default function Admin({ user }) {
     hero_title: '', 
     hero_subtitle: '', 
     cta_button_text: '', 
-    about_story: '' 
+    about_story: '',
+    about_hero_title: '',
+    about_hero_accent: '',
+    about_hero_description: '' 
   });
 
   const navigate = useNavigate();
@@ -495,9 +498,13 @@ async function checkAdmin() {
             try {
               const { error } = await supabase.from('site_settings').upsert({ 
                 brand_id: currentSiteBrand, 
-                hero_title: settings.hero_title, 
+                hero_title: settings.hero_title,
+                hero_title_accent: settings.hero_title_accent, 
                 hero_subtitle: settings.hero_subtitle,
                 cta_button_text: settings.cta_button_text,
+                about_hero_title: settings.about_hero_title,
+                about_hero_accent: settings.about_hero_accent,
+                about_hero_description: settings.about_hero_description,
                 about_story: settings.about_story 
               });
               if (error) throw error;
@@ -508,11 +515,15 @@ async function checkAdmin() {
             <h3 className="text-xl font-black uppercase tracking-tighter">Storefront CMS</h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div><label className="text-[10px] font-black uppercase text-gray-400 block mb-2">Hero Title</label><input type="text" className="w-full bg-gray-50 p-4 rounded-2xl font-bold text-sm" value={settings.hero_title || ''} onChange={e => setSettings({...settings, hero_title: e.target.value})} /></div>
+              <div><label className="text-[10px] font-black uppercase text-gray-400 block mb-2">Hero Title</label><input type="text" className="w-full bg-gray-50 p-4 rounded-2xl font-bold text-sm" value={settings.hero_title || ''} onChange={e => setSettings({...settings, hero_title: e.target.value})} /></div>            
+              <div><label className="text-[10px] font-black uppercase text-gray-400 block mb-2">Hero Title Accent</label><input type="text" className="w-full bg-gray-50 p-4 rounded-2xl font-bold text-sm" value={settings.hero_title_accent || ''} onChange={e => setSettings({...settings, hero_title_accent: e.target.value})} /></div>
               <div><label className="text-[10px] font-black uppercase text-gray-400 block mb-2">Button Text</label><input type="text" className="w-full bg-gray-50 p-4 rounded-2xl font-bold text-sm" value={settings.cta_button_text || ''} onChange={e => setSettings({...settings, cta_button_text: e.target.value})} /></div>
             </div>
 
             <div><label className="text-[10px] font-black uppercase text-gray-400 block mb-2">Hero Subtitle</label><input type="text" className="w-full bg-gray-50 p-4 rounded-2xl font-bold text-sm" value={settings.hero_subtitle || ''} onChange={e => setSettings({...settings, hero_subtitle: e.target.value})} /></div>
+            <div><label className="text-[10px] font-black uppercase text-gray-400 block mb-2">About Hero Title</label><input type="text" className="w-full bg-gray-50 p-4 rounded-2xl font-bold text-sm" value={settings.about_hero_title || ''} onChange={e => setSettings({...settings, about_hero_title: e.target.value})} /></div>
+            <div><label className="text-[10px] font-black uppercase text-gray-400 block mb-2">About Hero Accent</label><input type="text" className="w-full bg-gray-50 p-4 rounded-2xl font-bold text-sm" value={settings.about_hero_accent || ''} onChange={e => setSettings({...settings, about_hero_accent: e.target.value})} /></div>
+            <div><label className="text-[10px] font-black uppercase text-gray-400 block mb-2">About Hero Description</label><textarea className="w-full bg-gray-50 p-4 rounded-2xl font-bold text-sm h-40" value={settings.about_hero_description || ''} onChange={e => setSettings({...settings, about_hero_description: e.target.value})} /></div>
             <div><label className="text-[10px] font-black uppercase text-gray-400 block mb-2">About Our Story</label><textarea className="w-full bg-gray-50 p-4 rounded-2xl font-bold text-sm h-40" value={settings.about_story || ''} onChange={e => setSettings({...settings, about_story: e.target.value})} /></div>
 
             <button type="submit" disabled={saving} style={{ backgroundColor: brandConfig.primaryColor }} className="w-full text-white py-5 rounded-2xl font-black uppercase tracking-widest shadow-lg hover:scale-[1.01] transition-transform">
