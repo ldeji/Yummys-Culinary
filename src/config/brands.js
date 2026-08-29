@@ -74,7 +74,7 @@ const brands = {
     titleFont: "'Quicksand', sans-serif", // Elegant & Friendly
     imageFolder: "/images/cee-the-bata", // <--- Points to dry goods photos
     supportEmail: "ceethebata@gmail.com",
-    address: "Plot 12, Block A, Lekki Phase 1, Lagos",
+    address: "Surulere, Lagos",
     web3FormsKey: import.meta.env.VITE_WEB3_KEY,
     footerText: "© 2026 Cee The Bata",
     items: ceeTheBataItems,
@@ -82,13 +82,13 @@ const brands = {
     upsells: ceeTheBataUpsells,
     aboutImage: "/images/cee-the-bata/CeeTheBataCollection.webp",
     ctaImage: "https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=1200", // People cooking
-    primaryColor: "#273511", // green-700 #273511
+    primaryColor: "#000000", // black
     lightColor: "#16a34a",   // green-500
     accentColor: "#c5a47f", // gold color
     backColor: "#24150f", // dark-brown
     newColor: "#24150f", // green-300
     whiteColor: "#ffffff", // white
-    whatsapp: "07080450190", // added WhatsApp number for Cee The Bata
+    whatsapp: "08085260511", // added WhatsApp number for Cee The Bata
     paystackKey: import.meta.env.VITE_PAYSTACK_KEY, // Add your key here
     currency: "NGN",
      heroImages: [

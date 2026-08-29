@@ -3,7 +3,7 @@ import { supabase } from '../config/supabaseClient';
 import { brandConfig } from '../config/brands';
 import { useNavigate } from 'react-router-dom';
 import imageCompression from 'browser-image-compression';
-import { FaChartLine, FaBox, FaHistory, FaCog, FaMoneyBillWave, FaCloudUploadAlt, FaTrash } from 'react-icons/fa';
+import { FaChartLine, FaBox, FaHistory, FaCog, FaMoneyBillWave, FaCloudUploadAlt, FaUndo, FaTrash } from 'react-icons/fa';
 
 export default function Admin({ user }) {
   const [activeTab, setActiveTab] = useState('products');
@@ -111,8 +111,47 @@ async function checkAdmin() {
   }
 
   const totalRevenue = orders.reduce((acc, order) => acc + (order.total_amount || 0), 0);
-  
-  
+ 
+  // --- PASTE THIS RIGHT BELOW totalRevenue ---
+ const handleResetBrand = async (brandId, currentRevenue) => {
+    if (!window.confirm(`⚠️ Permanently archive ${brandId.toUpperCase()} revenue and clear order history?`)) return;
+    setSaving(true);
+    
+    try {
+      // 1. Fetch current lifetime revenue
+      const { data: stats } = await supabase.from('site_settings').select('lifetime_revenue').eq('brand_id', brandId).single();
+      const newLife = (stats?.lifetime_revenue || 0) + currentRevenue;
+      
+      // 2. Save new lifetime revenue
+      const { error: upsertError } = await supabase.from('site_settings').upsert({ brand_id: brandId, lifetime_revenue: newLife });
+      if (upsertError) throw upsertError;
+      
+      // 3. Delete the orders for this brand (Check if it actually deletes)
+      const { error: deleteError, count } = await supabase
+        .from('orders')
+        .delete({ count: 'exact' })
+        .eq('brand_id', brandId);
+        
+      if (deleteError) throw deleteError;
+      
+      // If count is 0, it means the database blocked it!
+      if (count === 0) {
+        throw new Error("Action blocked by database! Please run the SQL DELETE policy in Supabase.");
+      }
+      
+      // 4. Instantly clear from UI only if database deletion was successful
+      setOrders(prev => prev.filter(o => o.brand_id !== brandId));
+      alert(`Success! ${count} orders cleared and revenue archived for ${brandId}.`);
+      
+    } catch (err) {
+      console.error("Reset Error:", err);
+      alert("Reset failed: " + err.message);
+    } finally { 
+      setSaving(false); 
+    }
+  };
+
+
   const getTopSellingProducts = () => {
     const counts = {};
     orders.forEach(order => {
@@ -138,13 +177,23 @@ async function checkAdmin() {
     } catch (err) { alert(err.message); } finally { setSaving(false); }
   }
 
-  const handleStatusUpdate = async (orderId, newStatus) => {
+ const handleStatusUpdate = async (orderId, newStatus) => {
     try {
-      const { error } = await supabase.from('orders').update({ status: newStatus }).eq('id', orderId);
+      const { error } = await supabase
+        .from('orders')
+        .update({ status: newStatus })
+        .eq('id', orderId);
+        
       if (error) throw error;
-      fetchData();
-      alert(`Order set to ${newStatus}`);
-    } catch (error) { alert("Update failed."); }
+      
+      // Instantly update the UI without reloading the page
+      setOrders(prevOrders => 
+        prevOrders.map(o => o.id === orderId ? { ...o, status: newStatus } : o)
+      );
+    } catch (error) {
+      console.error(error);
+      alert("Failed to update status.");
+    }
   };
 
   const getImageUrl = (url) => {
@@ -272,201 +321,190 @@ async function checkAdmin() {
   </div>
 )}
 
-      {/* 3. ORDERS TAB (Month Grouping & Brand Stats) */}
+  {/* 3. ORDERS TAB (Month Grouping & Brand Stats) */}
       {activeTab === 'orders' && (
-<div
-  className={`grid gap-6 ${
-    userProfile?.brand_id === "all"
-      ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
-      : "grid-cols-1 lg:grid-cols-3"
-  }`}
->
-
-  {userProfile?.brand_id === 'all' ? (
-    <>
-      {Object.entries(
-        orders.reduce((acc, o) => {
-          acc[o.brand_id] = (acc[o.brand_id] || 0) + (o.total_amount || 0);
-          return acc;
-        }, {})
-      ).map(([bid, rev]) => (
-        <div
-          key={bid}
-          className="bg-white p-6 rounded-[32px] border border-gray-100 shadow-sm"
-        >
-          <p className="text-[10px] font-black uppercase text-gray-400 mb-1">
-            {bid} Income
-          </p>
-          <p className="text-2xl font-black tracking-tighter">
-            ₦{rev.toLocaleString()}
-          </p>
-        </div>
-      ))}
-
-      <div className="bg-black text-white p-6 rounded-[32px] shadow-lg">
-        <p className="text-[10px] font-black uppercase text-gray-500 mb-1">
-          Total Platform
-        </p>
-        <p className="text-2xl font-black tracking-tighter">
-          ₦{totalRevenue.toLocaleString()}
-        </p>
-      </div>
-    </>
-  ) : (
-    <div className="lg:col-span-3 bg-gradient-to-r from-green-600 to-emerald-500 text-white p-8 rounded-[32px] shadow-xl flex items-center justify-between">
-
-  <div>
-    <p className="text-xs uppercase tracking-[0.3em] font-bold opacity-80">
-      Total Revenue
-    </p>
-
-    <h2 className="text-4xl lg:text-5xl font-black mt-3">
-      ₦{totalRevenue.toLocaleString()}
-    </h2>
-
-    <p className="text-sm opacity-80 mt-2 uppercase">
-      {userProfile?.brand_id}
-    </p>
-  </div>
-
- <div className="hidden lg:flex items-center justify-center w-24 h-24 rounded-full bg-white/20 text-6xl font-black">
-  ₦
-</div>
-
-</div>
-          )}
-
-        {/* ORDERS GROUPED BY MONTH */}
-{Object.entries(
-  orders.reduce((acc, o) => {
-    const m = new Date(o.created_at).toLocaleString("default", {
-      month: "long",
-      year: "numeric",
-    });
-    if (!acc[m]) acc[m] = [];
-    acc[m].push(o);
-    return acc;
-  }, {})
-).map(([month, mOrders]) => (
-  <div key={month} className="space-y-4">
-
-    <div className="flex items-center gap-4">
-      <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-400 whitespace-nowrap">
-        {month}
-      </h3>
-      <div className="h-[1px] w-full bg-gray-100"></div>
-    </div>
-
-    {/* HORIZONTAL SCROLL */}
-    <div className="bg-white rounded-[40px] border shadow-sm overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[1500px] text-left">
-
-          <thead className="bg-gray-50 text-[10px] font-black uppercase text-gray-400">
-            <tr>
-              <th className="p-6 whitespace-nowrap">Order</th>
-
-              {userProfile?.brand_id === "all" && (
-                <th className="p-6 whitespace-nowrap">Brand</th>
-              )}
-
-              <th className="p-6 whitespace-nowrap">Customer</th>
-              <th className="p-6 whitespace-nowrap">Address</th>
-              <th className="p-6 whitespace-nowrap">Items</th>
-              <th className="p-6 whitespace-nowrap">Amount</th>
-              <th className="p-6 whitespace-nowrap">Status</th>
-            </tr>
-          </thead>
-
-          <tbody className="divide-y text-sm">
-            {mOrders.map((o) => (
-              <tr key={o.id} className="hover:bg-gray-50 transition-colors">
-
-                {/* ORDER */}
-                <td className="p-6 whitespace-nowrap">
-                  <div className="font-black text-lg">
-                    #{o.id.toString().slice(0, 8)}
-                  </div>
-
-                  <div className="text-[10px] text-gray-400">
-                    {new Date(o.created_at).toLocaleDateString()}
-                  </div>
-                </td>
-
-                {/* BRAND */}
-                {userProfile?.brand_id === "all" && (
-                  <td className="p-6 whitespace-nowrap">
-                    <span className="text-[9px] font-black px-3 py-1 bg-gray-100 rounded-full uppercase">
-                      {o.brand_id}
-                    </span>
-                  </td>
-                )}
-
-                {/* CUSTOMER */}
-                <td className="p-6 whitespace-nowrap min-w-[220px]">
-                  <p className="font-bold text-gray-900">
-                    {o.customer_name || "N/A"}
-                  </p>
-
-                  <p className="text-sm text-gray-500">
-                    {o.customer_phone || ""}
-                  </p>
-                </td>
-
-                {/* ADDRESS */}
-                <td className="p-6 min-w-[380px]">
-                  <p className="text-sm text-gray-600 break-words">
-                    {o.customer_address || "N/A"}
-                  </p>
-                </td>
-
-                {/* ITEMS */}
-                <td className="p-6 min-w-[380px]">
-                  {o.items?.map((i) => (
-                    <div key={i.id} className="mb-1">
-                      {i.quantity} × {i.name}
-                      <span className="font-semibold">
-                        {" "}
-                        (₦{i.price?.toLocaleString()})
-                      </span>
-                    </div>
-                  ))}
-                </td>
-
-                {/* AMOUNT */}
-                <td className="p-6 font-black text-gray-900 whitespace-nowrap">
-                  ₦{o.total_amount?.toLocaleString()}
-                </td>
-
-                {/* STATUS */}
-                <td className="p-6 whitespace-nowrap">
-                  <select
-                    value={o.status || "Pending"}
-                    onChange={(e) =>
-                      handleStatusUpdate(o.id, e.target.value)
-                    }
-                    className="bg-gray-50 border-none text-[10px] font-black uppercase py-2 px-3 rounded-xl cursor-pointer"
+        <div className="space-y-10">
+          <div
+            className={`grid gap-6 ${
+              userProfile?.brand_id === "all"
+                ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+                : "grid-cols-1 lg:grid-cols-3"
+            }`}
+          >
+            {userProfile?.brand_id === 'all' ? (
+              <>
+                {Object.entries(
+                  orders.reduce((acc, o) => {
+                    acc[o.brand_id] = (acc[o.brand_id] || 0) + (o.total_amount || 0);
+                    return acc;
+                  }, {})
+                ).map(([bid, rev]) => (
+                  <div
+                    key={bid}
+                    className="bg-white p-6 rounded-[32px] border border-gray-100 shadow-sm relative group"
                   >
-                    <option value="Pending">⏳ Pending</option>
-                    <option value="Paid">₦ Paid</option>
-                    <option value="Preparing Your Order">Preparing Your Order</option>
-                    <option value="Out for delivery">🚚Out for Delivery</option>
-                    <option value="Completed">✅ Completed</option>
-                  </select>
-                </td>
+                    {/* THE RESET BUTTON IS BACK 👇 */}
+          <button 
+            onClick={() => handleResetBrand(bid, rev)} 
+            disabled={rev === 0} 
+            className="absolute top-5 right-5 text-gray-200 hover:text-red-500 transition-colors disabled:opacity-0"
+            title="Archive & Reset Brand"
+          >
+            <FaUndo size={14} />
+          </button>
+                    <p className="text-[10px] font-black uppercase text-gray-400 mb-1">
+                      {bid} Income
+                    </p>
+                    <p className="text-2xl font-black tracking-tighter">
+                      ₦{rev.toLocaleString()}
+                    </p>
+                  </div>
+                ))}
 
-              </tr>
-            ))}
-          </tbody>
+                <div className="bg-black text-white p-6 rounded-[32px] shadow-lg">
+                  <p className="text-[10px] font-black uppercase text-gray-500 mb-1">
+                    Total Platform
+                  </p>
+                  <p className="text-2xl font-black tracking-tighter">
+                    ₦{totalRevenue.toLocaleString()}
+                  </p>
+                </div>
+              </>
+            ) : (
+              <div className="lg:col-span-3 bg-gradient-to-r from-green-600 to-emerald-500 text-white p-8 rounded-[32px] shadow-xl flex items-center justify-between">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.3em] font-bold opacity-80">
+                    Total Revenue
+                  </p>
+                  <h2 className="text-4xl lg:text-5xl font-black mt-3">
+                    ₦{totalRevenue.toLocaleString()}
+                  </h2>
+                  <p className="text-sm opacity-80 mt-2 uppercase">
+                    {userProfile?.brand_id}
+                  </p>
+                </div>
+                <div className="hidden lg:flex items-center justify-center w-24 h-24 rounded-full bg-white/20 text-6xl font-black">
+                  ₦
+                </div>
+              </div>
+            )}
+          </div>
 
-        </table>
-      </div>
-    </div>
+          {/* ORDERS GROUPED BY MONTH */}
+          {Object.entries(
+            orders.reduce((acc, o) => {
+              const m = new Date(o.created_at).toLocaleString("default", {
+                month: "long",
+                year: "numeric",
+              });
+              if (!acc[m]) acc[m] = [];
+              acc[m].push(o);
+              return acc;
+            }, {})
+          ).map(([month, mOrders]) => (
+            <div key={month} className="space-y-4">
+              <div className="flex items-center gap-4">
+                <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-400 whitespace-nowrap">
+                  {month}
+                </h3>
+                <div className="h-[1px] w-full bg-gray-100"></div>
+              </div>
 
-  </div>
-))}
-</div>
-)}
+              {/* TABLE CONTAINER - Fixed widths for responsive desktop view */}
+              <div className="bg-white rounded-[40px] border shadow-sm overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[800px] text-left">
+                    <thead className="bg-gray-50 text-[10px] font-black uppercase text-gray-400">
+                      <tr>
+                        <th className="p-4 whitespace-nowrap">Order Info</th>
+                        {userProfile?.brand_id === "all" && (
+                          <th className="p-4 whitespace-nowrap">Brand</th>
+                        )}
+                        {/* Merged Customer and Address for cleaner UI */}
+                        <th className="p-4 whitespace-nowrap">Customer Details</th>
+                        <th className="p-4 whitespace-nowrap">Items</th>
+                        <th className="p-4 whitespace-nowrap">Amount</th>
+                        <th className="p-4 whitespace-nowrap">Status Control</th>
+                      </tr>
+                    </thead>
+
+                    <tbody className="divide-y text-sm">
+                      {mOrders.map((o) => (
+                        <tr key={o.id} className="hover:bg-gray-50 transition-colors">
+                          
+                          {/* ORDER */}
+                          <td className="p-4 align-top whitespace-nowrap">
+                            <div className="font-black text-sm text-gray-900">
+                              #{o.id.toString().slice(0, 8)}
+                            </div>
+                            <div className="text-[10px] font-bold text-gray-400 mt-1">
+                              {new Date(o.created_at).toLocaleDateString()}
+                            </div>
+                          </td>
+
+                          {/* BRAND */}
+                          {userProfile?.brand_id === "all" && (
+                            <td className="p-4 align-top whitespace-nowrap">
+                              <span className="text-[9px] font-black px-2 py-1 bg-gray-100 rounded-md uppercase">
+                                {o.brand_id}
+                              </span>
+                            </td>
+                          )}
+
+                          {/* CUSTOMER DETAILS (Merged Name, Phone, and Address) */}
+                          <td className="p-4 align-top max-w-[200px]">
+                            <p className="font-bold text-gray-900 text-xs uppercase leading-tight">
+                              {o.customer_name || "N/A"}
+                            </p>
+                            <p className="text-[10px] font-bold text-blue-500 mt-0.5 mb-1">
+                              {o.customer_phone || ""}
+                            </p>
+                            <p className="text-[10px] text-gray-500 leading-snug break-words">
+                              {o.customer_address || "N/A"}
+                            </p>
+                          </td>
+
+                          {/* ITEMS */}
+                          <td className="p-4 align-top max-w-[200px]">
+                            <div className="text-[11px] text-gray-600 space-y-1">
+                              {o.items?.map((i) => (
+                                <div key={i.id} className="leading-tight">
+                                  <span className="font-black text-gray-800">{i.quantity}×</span> {i.name}
+                                </div>
+                              ))}
+                            </div>
+                          </td>
+
+                          {/* AMOUNT */}
+                          <td className="p-4 align-top font-black text-gray-900 whitespace-nowrap text-sm">
+                            ₦{o.total_amount?.toLocaleString()}
+                          </td>
+
+                          {/* STATUS */}
+                          <td className="p-4 align-top whitespace-nowrap">
+                            <select
+                              value={o.status || "Pending"}
+                              onChange={(e) => handleStatusUpdate(o.id, e.target.value)}
+                              className="bg-gray-100 border-none text-[9px] font-black uppercase py-2 px-3 rounded-xl cursor-pointer focus:ring-2 focus:ring-black/10 outline-none w-full max-w-[140px]"
+                            >
+                              <option value="Pending">⏳ Pending</option>
+                              <option value="Paid">₦ Paid</option>
+                              <option value="Preparing Your Order">🍳 Preparing</option>
+                              <option value="Out for delivery">🚚 Out forDelivery</option>
+                              <option value="Completed">✅ Completed</option>
+                            </select>
+                          </td>
+
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
       {/* 4. ANALYTICS TAB */}
       {activeTab === 'analytics' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">

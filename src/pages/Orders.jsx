@@ -98,8 +98,7 @@ export default function Orders({ user }) {
                   {order.status === 'Pending' && '⏳ '}
                   {order.status === 'Paid' && '💰 '}
                   {order.status === 'Out for delivery' && '🚚 '}
-                  {order.status === 'Completed' && '✅ '}
-                  
+                  {order.status === 'Completed' && '✅ '}                 
                   {order.status || 'Processing'}
                 </span>
               </div>
